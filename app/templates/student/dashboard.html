@@ -1,0 +1,227 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}Student Dashboard | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-2">Student Dashboard</h1>
+                    <p class="lead mb-0">Welcome, {{ session.get('user_data', {}).get('displayName', 'Student') }}!</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('student.new_grievance') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus-circle me-2"></i>Submit New Grievance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-4 mb-md-0">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stats-value">{{ grievances|length }}</div>
+                <div class="stats-title">Total Grievances</div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-4 mb-md-0">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stats-value">{{ status_counts.get('pending', 0) }}</div>
+                <div class="stats-title">Pending</div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-4 mb-md-0">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-spinner"></i>
+                </div>
+                <div class="stats-value">{{ status_counts.get('in_progress', 0) + status_counts.get('assigned', 0) + status_counts.get('under_review', 0) }}</div>
+                <div class="stats-title">In Progress</div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-4 mb-md-0">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stats-value">{{ status_counts.get('resolved', 0) + status_counts.get('closed', 0) }}</div>
+                <div class="stats-title">Resolved</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-3 mb-md-0">Need to report a grievance?</h5>
+                            <p class="text-muted mb-3 mb-md-0">
+                                Submit a new grievance to report any academic, administrative, or campus-related issues. 
+                                We're here to help resolve your concerns.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <a href="{{ url_for('student.new_grievance') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-plus-circle me-2"></i>Submit New Grievance
+                            </a>
+                            <small class="text-muted d-block mt-2">
+                                Your grievance will be reviewed by the relevant department.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Grievances List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">My Grievances</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Filter by Status
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
+                            <li><a class="dropdown-item" href="#" data-filter="all">All Grievances</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="pending">Pending</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="in_progress">In Progress</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="resolved">Resolved</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="closed">Closed</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if grievances %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                        <th>Date Submitted</th>
+                                        <th>Last Updated</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for grievance in grievances %}
+                                        <tr class="grievance-item" data-status="{{ grievance.status }}">
+                                            <td class="text-muted">#{{ grievance.id[:8] }}</td>
+                                            <td>
+                                                <div class="grievance-title fw-medium">{{ grievance.title }}</div>
+                                                {% if grievance.attachments %}
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-paperclip me-1"></i>{{ grievance.attachments|length }} attachment(s)
+                                                    </small>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ grievance.department }}</td>
+                                            <td>
+                                                <span class="status-badge status-{{ grievance.status }}">
+                                                    {{ grievance.status|replace('_', ' ')|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="grievance-meta">
+                                                    {% if grievance.createdAt %}
+                                                        {{ grievance.createdAt.strftime('%Y-%m-%d %H:%M') if grievance.createdAt is not string else grievance.createdAt }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="grievance-meta">
+                                                    {% if grievance.updatedAt %}
+                                                        {{ grievance.updatedAt.strftime('%Y-%m-%d %H:%M') if grievance.updatedAt is not string else grievance.updatedAt }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ url_for('student.grievance_detail', grievance_id=grievance.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye me-1"></i>View Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <img src="{{ url_for('static', filename='images/empty-state.svg') }}" alt="No grievances" 
+                                 style="max-width: 200px; opacity: 0.5;" class="mb-4">
+                            <h5 class="text-muted mb-2">No Grievances Found</h5>
+                            <p class="text-muted mb-4">You haven't submitted any grievances yet.</p>
+                            <a href="{{ url_for('student.new_grievance') }}" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-2"></i>Submit Your First Grievance
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter grievances by status
+        const filterLinks = document.querySelectorAll('[data-filter]');
+        const grievanceItems = document.querySelectorAll('.grievance-item');
+        const filterDropdown = document.getElementById('filterDropdown');
+        
+        filterLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const filter = this.dataset.filter;
+                const filterLabel = this.textContent;
+                
+                // Update dropdown button text
+                filterDropdown.textContent = filterLabel;
+                
+                // Apply filter
+                grievanceItems.forEach(item => {
+                    if (filter === 'all' || item.dataset.status === filter) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                // Update active state
+                filterLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %} 

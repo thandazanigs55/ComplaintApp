@@ -1,0 +1,146 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}{{ title|default('User Management') }} | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ title|default('Users') }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">{{ title|default('User Management') }}</h1>
+                <div>
+                    <a href="{{ url_for('admin.all_grievances') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-list"></i> View All Grievances
+                    </a>
+                    <div class="btn-group">
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary {% if current_filter == 'all' %}active{% endif %}">
+                            All Users
+                        </a>
+                        <a href="{{ url_for('admin.users', role='student') }}" class="btn btn-outline-primary {% if current_filter == 'student' %}active{% endif %}">
+                            Students
+                        </a>
+                        <a href="{{ url_for('admin.users', role='admin') }}" class="btn btn-outline-primary {% if current_filter == 'admin' %}active{% endif %}">
+                            Administrators
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <p class="lead">Manage user accounts in the Student Grievance Management System.</p>
+        </div>
+    </div>
+    
+    <!-- Users List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ current_filter|title if current_filter != 'all' else 'All' }} Users</h5>
+                    <div>
+                        <input type="text" id="userSearch" class="form-control form-control-sm" 
+                               placeholder="Search users..." style="width: 200px;">
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if users %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="usersTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Registration Date</th>
+                                        <th>Last Login</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                        <tr class="user-item">
+                                            <td>{{ user.name }}</td>
+                                            <td>{{ user.email }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'primary' if user.role == 'admin' else 'secondary' }}">
+                                                    {{ user.role|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if user.createdAt %}
+                                                    {{ user.createdAt.strftime('%Y-%m-%d') if user.createdAt is not string else user.createdAt }}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if user.lastLogin %}
+                                                    {{ user.lastLogin.strftime('%Y-%m-%d %H:%M') if user.lastLogin is not string else user.lastLogin }}
+                                                {% else %}
+                                                    Never
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-outline-secondary btn-sm">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </a>
+                                                    {% if user.role == 'student' %}
+                                                        <a href="{{ url_for('admin.student_grievances', student_id=user.id) }}" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-list"></i> Grievances
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <h5 class="text-muted">No Users Found</h5>
+                            <p class="text-muted">There are no users matching the selected filter.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup user search functionality
+        const searchInput = document.getElementById('userSearch');
+        const userTable = document.getElementById('usersTable');
+        const userRows = userTable?.querySelectorAll('tbody tr');
+        
+        if (searchInput && userRows) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                userRows.forEach(row => {
+                    const name = row.cells[0].textContent.toLowerCase();
+                    const email = row.cells[1].textContent.toLowerCase();
+                    const role = row.cells[2].textContent.toLowerCase();
+                    
+                    if (name.includes(searchTerm) || email.includes(searchTerm) || role.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %} 

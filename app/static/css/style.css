@@ -1,0 +1,426 @@
+/* DUT Student Grievance Management System - Main Stylesheet */
+
+:root {
+    --dut-blue: #004F9F;
+    --dut-red: #E31837;
+    --dut-light-blue: #0076C0;
+    --dut-dark-blue: #003366;
+    --dut-gray: #58595B;
+    --dut-light-gray: #F2F2F2;
+}
+
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--dut-dark-blue);
+    font-weight: 600;
+}
+
+a {
+    color: var(--dut-blue);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--dut-dark-blue);
+}
+
+/* Form Styles */
+.form-control:focus {
+    border-color: var(--dut-blue);
+    box-shadow: 0 0 0 0.25rem rgba(0, 79, 159, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.required:after {
+    content: '*';
+    color: var(--dut-red);
+    margin-left: 3px;
+}
+
+/* Card Styles */
+.card {
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: none;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: var(--dut-light-gray);
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+}
+
+.card-title {
+    color: var(--dut-blue);
+    margin-bottom: 0.5rem;
+}
+
+/* Dashboard Statistics */
+.stats-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.stats-icon {
+    background-color: rgba(0, 79, 159, 0.1);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.stats-icon i {
+    color: var(--dut-blue);
+    font-size: 24px;
+}
+
+.stats-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--dut-blue);
+}
+
+.stats-title {
+    font-size: 14px;
+    color: var(--dut-gray);
+}
+
+/* Grievance List */
+.grievance-item {
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.grievance-item:hover {
+    background-color: rgba(0, 79, 159, 0.05);
+}
+
+.grievance-title {
+    font-weight: 600;
+    color: var(--dut-dark-blue);
+}
+
+.grievance-meta {
+    font-size: 0.85rem;
+    color: var(--dut-gray);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.status-pending {
+    background-color: #FFC107;
+    color: #212529;
+}
+
+.status-in_progress {
+    background-color: #17A2B8;
+    color: white;
+}
+
+.status-assigned {
+    background-color: var(--dut-light-blue);
+    color: white;
+}
+
+.status-under_review {
+    background-color: #6610F2;
+    color: white;
+}
+
+.status-resolved {
+    background-color: #28A745;
+    color: white;
+}
+
+.status-closed {
+    background-color: #6C757D;
+    color: white;
+}
+
+/* Authentication Forms */
+.auth-container {
+    max-width: 500px;
+    margin: 40px auto;
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-logo img {
+    max-width: 200px;
+}
+
+.auth-card {
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form-title {
+    margin-bottom: 20px;
+    color: var(--dut-dark-blue);
+    font-weight: 700;
+}
+
+/* File Upload */
+.custom-file-label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Timeline for Grievance Status */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 15px;
+    width: 2px;
+    background-color: var(--dut-light-gray);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-badge {
+    position: absolute;
+    left: -30px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    background-color: var(--dut-blue);
+    color: white;
+    z-index: 1;
+}
+
+.timeline-content {
+    padding: 15px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.timeline-date {
+    font-size: 0.85rem;
+    color: var(--dut-gray);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 20px;
+    }
+    
+    .auth-container {
+        margin: 20px 15px;
+    }
+}
+
+.navbar {
+    background-color: var(--dut-blue);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 4px;
+    margin-right: 1.5rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+}
+
+.navbar-brand:hover {
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.navbar-brand img {
+    height: 45px;
+    width: auto;
+    margin-right: 0;
+    transition: transform 0.2s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    image-rendering: -webkit-optimize-contrast;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+.navbar-brand:hover img {
+    transform: scale(1.05);
+}
+
+.nav-link {
+    color: white !important;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn-primary {
+    background-color: var(--dut-blue);
+    border-color: var(--dut-blue);
+}
+
+.btn-primary:hover {
+    background-color: var(--dut-dark-blue);
+    border-color: var(--dut-dark-blue);
+}
+
+.btn-danger {
+    background-color: var(--dut-red);
+    border-color: var(--dut-red);
+}
+
+.btn-outline-primary {
+    color: var(--dut-blue);
+    border-color: var(--dut-blue);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--dut-blue);
+    border-color: var(--dut-blue);
+}
+
+.footer {
+    background-color: var(--dut-blue);
+    color: white;
+    padding: 3rem 0 1.5rem;
+    margin-top: 3rem;
+}
+
+.footer h5 {
+    color: white;
+    margin-bottom: 1.5rem;
+}
+
+.footer a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+}
+
+.footer a:hover {
+    color: white;
+}
+
+.auth-container {
+    max-width: 480px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.auth-logo {
+    text-align: center;
+    margin: 2.5rem auto;
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
+}
+
+.auth-logo img {
+    height: 85px;
+    width: auto;
+    margin-bottom: 0;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    image-rendering: -webkit-optimize-contrast;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+.auth-card {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.auth-form-title {
+    color: var(--dut-blue);
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-label.required:after {
+    content: "*";
+    color: var(--dut-red);
+    margin-left: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    .navbar-brand {
+        background-color: rgba(255, 255, 255, 0.98);
+    }
+    
+    .auth-logo {
+        background-color: rgba(255, 255, 255, 0.98);
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-brand {
+        padding: 0.35rem;
+        margin-right: 1rem;
+    }
+    
+    .navbar-brand img {
+        height: 35px;
+    }
+    
+    .auth-logo {
+        margin: 1.5rem auto;
+        padding: 1rem;
+    }
+    
+    .auth-logo img {
+        height: 65px;
+    }
+} 

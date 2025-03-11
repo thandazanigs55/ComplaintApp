@@ -1,0 +1,193 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}Edit User | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.users') }}">Users</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit User</li>
+                </ol>
+            </nav>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Edit User</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.id) }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label required">Full Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   value="{{ user.name }}" placeholder="Enter full name">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label required">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" required 
+                                   value="{{ user.email }}" placeholder="Enter email address">
+                            <div class="form-text">Changing the email address will send a verification email to the new address.</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="role" class="form-label required">Role</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
+                                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Administrator</option>
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span>Updating a user's role will change their permissions in the system.</span>
+                        </div>
+                        
+                        {% if user.role == 'student' %}
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Student Information</h5>
+                                            <p class="card-text">
+                                                <strong>Student Number:</strong> {{ user.student_number|default('Not provided') }}<br>
+                                                <strong>Grievances:</strong> {{ user.grievances_count|default('0') }}
+                                            </p>
+                                            <a href="{{ url_for('admin.student_grievances', student_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-list me-1"></i> View Grievances
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Update User</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Password Reset Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Reset Password</h5>
+                </div>
+                <div class="card-body">
+                    <p>Use this form to reset the user's password:</p>
+                    
+                    <form method="POST" action="{{ url_for('admin.reset_password', user_id=user.id) }}">
+                        <div class="mb-3">
+                            <label for="password" class="form-label required">New Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required 
+                                   placeholder="Enter new password">
+                            <div class="form-text">Password must be at least 8 characters long.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label required">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" 
+                                   placeholder="Confirm new password">
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-warning" id="resetPasswordBtn" disabled>
+                                Reset Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Danger Zone Card -->
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Danger Zone</h5>
+                </div>
+                <div class="card-body">
+                    <p>Be careful with the following actions:</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Delete User</h6>
+                            <p class="mb-0 text-muted">Once deleted, all user data will be lost.</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger" 
+                                data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                data-user-id="{{ user.id }}" data-user-name="{{ user.name }}">
+                            Delete User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the user "<span id="userName">{{ user.name }}</span>"?</p>
+                <p class="text-danger">Warning: This action cannot be undone. Users with existing grievances cannot be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteUserForm" method="POST" action="{{ url_for('admin.delete_user_route', user_id=user.id) }}">
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password confirmation check
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirm_password');
+        const resetBtn = document.getElementById('resetPasswordBtn');
+        
+        function validatePassword() {
+            if (passwordInput.value.length < 8) {
+                resetBtn.disabled = true;
+                return false;
+            }
+            
+            if (passwordInput.value !== confirmInput.value) {
+                resetBtn.disabled = true;
+                confirmInput.setCustomValidity("Passwords do not match");
+            } else {
+                resetBtn.disabled = false;
+                confirmInput.setCustomValidity("");
+            }
+        }
+        
+        passwordInput.addEventListener('input', validatePassword);
+        confirmInput.addEventListener('input', validatePassword);
+        
+        // Delete modal setup
+        const deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const userName = button.getAttribute('data-user-name');
+                
+                document.getElementById('userName').textContent = userName;
+            });
+        }
+    });
+</script>
+{% endblock %} 

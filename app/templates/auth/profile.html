@@ -1,0 +1,120 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}My Profile | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    {% if user.role == 'student' %}
+                        <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    {% elif user.role == 'admin' %}
+                        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">My Profile</li>
+                </ol>
+            </nav>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">My Profile</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <div style="width: 100px; height: 100px; background-color: var(--dut-blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto;">
+                                    {{ user.displayName|first|upper }}
+                                </div>
+                            </div>
+                            <p class="mb-0"><span class="badge bg-primary">{{ user.role|title }}</span></p>
+                        </div>
+                        <div class="col-md-9">
+                            <h4>{{ user.displayName }}</h4>
+                            <p class="text-muted">{{ user.email }}</p>
+                            
+                            <hr>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Account Created:</strong><br>
+                                        {% if user.createdAt %}
+                                            {{ user.createdAt.strftime('%Y-%m-%d') if user.createdAt is not string else user.createdAt }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Role:</strong><br>{{ user.role|title }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i class="fas fa-info-circle me-3 fs-4"></i>
+                        <div>
+                            <strong>Note:</strong> To update your profile information, please contact the IT Helpdesk at <a href="mailto:helpdesk@dut.ac.za">helpdesk@dut.ac.za</a>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if user.role == 'student' %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">My Grievance Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <div class="p-3 border rounded">
+                                    <h2 class="text-primary mb-0">{{ total_grievances|default(0) }}</h2>
+                                    <p class="text-muted mb-0">Total Grievances</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <div class="p-3 border rounded">
+                                    <h2 class="text-warning mb-0">{{ pending_grievances|default(0) }}</h2>
+                                    <p class="text-muted mb-0">Pending</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded">
+                                    <h2 class="text-success mb-0">{{ resolved_grievances|default(0) }}</h2>
+                                    <p class="text-muted mb-0">Resolved</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-list me-1"></i> View My Grievances
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="d-flex justify-content-between mt-4">
+                {% if user.role == 'student' %}
+                    <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                {% elif user.role == 'admin' %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                {% endif %}
+                
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

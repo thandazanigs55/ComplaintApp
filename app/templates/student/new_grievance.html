@@ -1,0 +1,293 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}Submit New Grievance | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Submit New Grievance</li>
+                </ol>
+            </nav>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Submit New Grievance</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Please provide detailed information about your grievance. The more details you provide, the better we can assist you.
+                    </p>
+                    
+                    <form method="POST" action="{{ url_for('student.new_grievance') }}" enctype="multipart/form-data" id="grievanceForm" novalidate>
+                        <div class="mb-3">
+                            <label for="title" class="form-label required">Grievance Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ form_data.title }}" 
+                                   minlength="5" maxlength="200" required 
+                                   placeholder="Brief title describing your grievance"
+                                   autocomplete="off">
+                            <div class="form-text d-flex justify-content-between">
+                                <span>Be specific and concise</span>
+                                <span class="title-length">0/200 characters</span>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please enter a title between 5 and 200 characters.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="department" class="form-label required">Department</label>
+                            <select class="form-select" id="department" name="department" required>
+                                <option value="" {% if not form_data.department %}selected{% endif %} disabled>Select the department related to your grievance</option>
+                                {% for department in departments %}
+                                    <option value="{{ department }}" {% if department == form_data.department %}selected{% endif %}>
+                                        {{ department }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Choose the department most relevant to your grievance</div>
+                            <div class="invalid-feedback">
+                                Please select a department.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="description" class="form-label required">Detailed Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="6" required minlength="20" maxlength="3000"
+                                      placeholder="Provide a detailed description of your grievance, including what happened, when it happened, and how it affects you.">{{ form_data.description }}</textarea>
+                            <div class="form-text d-flex justify-content-between">
+                                <span>Include all relevant details</span>
+                                <span class="description-length">0/3000 characters</span>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please enter a description between 20 and 3000 characters.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="attachments" class="form-label">Supporting Documents (Optional)</label>
+                            <input type="file" class="form-control" id="attachments" name="attachments" 
+                                   multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            <div class="form-text">
+                                <ul class="mb-0">
+                                    <li>Maximum 5 files</li>
+                                    <li>Maximum size per file: 5MB</li>
+                                    <li>Allowed formats: PDF, Word documents, Images (JPG, PNG)</li>
+                                </ul>
+                            </div>
+                            <div id="filePreview" class="mt-2"></div>
+                        </div>
+                        
+                        <div class="alert alert-info d-flex align-items-center" role="alert">
+                            <i class="fas fa-info-circle me-3 fs-4"></i>
+                            <div>
+                                <strong>Important:</strong> Submitting a grievance will notify the administration. You'll receive email updates as your grievance is processed.
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                Submit Grievance
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Tips for Submitting an Effective Grievance</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Be specific:</strong> Include exact dates, times, and locations.</li>
+                        <li><strong>Be factual:</strong> Stick to facts and avoid overly emotional language.</li>
+                        <li><strong>Be solution-oriented:</strong> If possible, suggest how your grievance might be resolved.</li>
+                        <li><strong>Attach evidence:</strong> Include any relevant documents or communications.</li>
+                        <li><strong>Be respectful:</strong> Maintain a respectful tone throughout your description.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('grievanceForm');
+        const titleField = document.getElementById('title');
+        const descriptionField = document.getElementById('description');
+        const attachmentsField = document.getElementById('attachments');
+        const departmentField = document.getElementById('department');
+        const submitBtn = document.getElementById('submitBtn');
+        const filePreview = document.getElementById('filePreview');
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
+        
+        // Update character counter for title
+        function updateTitleCounter() {
+            const length = titleField.value.length;
+            const counter = document.querySelector('.title-length');
+            const isValid = length >= 5 && length <= 200;
+            
+            counter.textContent = `${length}/200 characters`;
+            counter.classList.toggle('text-danger', !isValid);
+            titleField.classList.toggle('is-invalid', !isValid);
+        }
+        
+        // Update character counter for description
+        function updateDescriptionCounter() {
+            const length = descriptionField.value.length;
+            const counter = document.querySelector('.description-length');
+            const isValid = length >= 20 && length <= 3000;
+            
+            counter.textContent = `${length}/3000 characters`;
+            counter.classList.toggle('text-danger', !isValid);
+            descriptionField.classList.toggle('is-invalid', !isValid);
+            
+            if (length > 3000) {
+                descriptionField.value = descriptionField.value.substring(0, 3000);
+                updateDescriptionCounter();
+            }
+        }
+        
+        // File preview and validation
+        function handleFileSelect(files) {
+            if (files.length > 5) {
+                showError('You can only upload up to 5 files.');
+                attachmentsField.value = '';
+                return false;
+            }
+            
+            // Clear previous preview
+            filePreview.innerHTML = '';
+            
+            let totalSize = 0;
+            const previewList = document.createElement('div');
+            previewList.className = 'list-group mt-2';
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                totalSize += file.size;
+                
+                if (file.size > maxFileSize) {
+                    showError(`File "${file.name}" exceeds the maximum file size of 5MB.`);
+                    attachmentsField.value = '';
+                    return false;
+                }
+                
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                
+                const fileInfo = document.createElement('div');
+                fileInfo.innerHTML = `
+                    <i class="fas ${getFileIcon(file.name)}"></i>
+                    <span class="ms-2">${file.name}</span>
+                    <small class="text-muted ms-2">(${formatFileSize(file.size)})</small>
+                `;
+                
+                item.appendChild(fileInfo);
+                previewList.appendChild(item);
+            }
+            
+            if (files.length > 0) {
+                filePreview.appendChild(previewList);
+            }
+            
+            return true;
+        }
+        
+        // Helper functions
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'pdf': return 'fa-file-pdf';
+                case 'doc':
+                case 'docx': return 'fa-file-word';
+                case 'jpg':
+                case 'jpeg':
+                case 'png': return 'fa-file-image';
+                default: return 'fa-file';
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showError(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger alert-dismissible fade show mt-2';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            filePreview.appendChild(alert);
+        }
+        
+        // Event listeners
+        titleField.addEventListener('input', updateTitleCounter);
+        descriptionField.addEventListener('input', updateDescriptionCounter);
+        attachmentsField.addEventListener('change', (e) => handleFileSelect(e.target.files));
+        departmentField.addEventListener('change', () => {
+            departmentField.classList.remove('is-invalid');
+        });
+        
+        // Form submission
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            let isValid = true;
+            
+            // Reset validation
+            form.classList.add('was-validated');
+            
+            // Validate title
+            if (titleField.value.length < 5 || titleField.value.length > 200) {
+                titleField.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validate department
+            if (!departmentField.value) {
+                departmentField.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validate description
+            const descLength = descriptionField.value.length;
+            if (descLength < 20 || descLength > 3000) {
+                descriptionField.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validate files if any are selected
+            if (attachmentsField.files.length > 0) {
+                isValid = handleFileSelect(attachmentsField.files);
+            }
+            
+            if (isValid) {
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.querySelector('.spinner-border').classList.remove('d-none');
+                form.submit();
+            }
+        });
+        
+        // Initialize counters
+        updateTitleCounter();
+        updateDescriptionCounter();
+    });
+</script>
+{% endblock %} 

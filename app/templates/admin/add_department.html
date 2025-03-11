@@ -1,0 +1,51 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}Add Department | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.departments') }}">Departments</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Department</li>
+                </ol>
+            </nav>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Add New Department</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Add a new department to the system. Departments are used when students submit grievances.
+                    </p>
+                    
+                    <form method="POST" action="{{ url_for('admin.add_dept') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label required">Department Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   placeholder="Enter department name (e.g., Finance Department)">
+                            <div class="form-text">Enter the official name of the department</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Enter department description (optional)"></textarea>
+                            <div class="form-text">Provide a brief description of the department's responsibilities</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('admin.departments') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Add Department</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

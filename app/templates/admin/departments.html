@@ -1,0 +1,162 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}Departments | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Departments</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">Departments</h1>
+                <a href="{{ url_for('admin.add_dept') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add Department
+                </a>
+            </div>
+            <p class="lead">Manage university departments for the grievance system.</p>
+        </div>
+    </div>
+    
+    <!-- Departments List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Departments</h5>
+                    <div>
+                        <input type="text" id="departmentSearch" class="form-control form-control-sm" 
+                               placeholder="Search departments..." style="width: 200px;">
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if departments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="departmentsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Department Name</th>
+                                        <th>Description</th>
+                                        <th>Created</th>
+                                        <th>Grievances</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dept in departments %}
+                                        <tr class="department-item">
+                                            <td>{{ dept.name }}</td>
+                                            <td>{{ dept.description or 'No description' }}</td>
+                                            <td>
+                                                {% if dept.createdAt %}
+                                                    {{ dept.createdAt.strftime('%Y-%m-%d') if dept.createdAt is not string else dept.createdAt }}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('admin.view_department_grievances', department=dept.name) }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-list me-1"></i> View Grievances
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('admin.edit_dept', dept_id=dept.id) }}" class="btn btn-outline-secondary btn-sm">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                           data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                           data-dept-id="{{ dept.id }}" data-dept-name="{{ dept.name }}">
+                                                        <i class="fas fa-trash-alt"></i> Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <h5 class="text-muted">No Departments Found</h5>
+                            <p class="text-muted">There are no departments in the system yet.</p>
+                            <a href="{{ url_for('admin.add_dept') }}" class="btn btn-primary mt-2">
+                                Add Your First Department
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the department "<span id="deptName"></span>"?</p>
+                <p class="text-danger">Warning: This action cannot be undone. Departments with associated grievances cannot be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteDeptForm" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">Delete Department</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup department search functionality
+        const searchInput = document.getElementById('departmentSearch');
+        const departmentTable = document.getElementById('departmentsTable');
+        const departmentRows = departmentTable?.querySelectorAll('tbody tr');
+        
+        if (searchInput && departmentRows) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                departmentRows.forEach(row => {
+                    const deptName = row.cells[0].textContent.toLowerCase();
+                    const deptDesc = row.cells[1].textContent.toLowerCase();
+                    
+                    if (deptName.includes(searchTerm) || deptDesc.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Setup delete modal
+        const deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const deptId = button.getAttribute('data-dept-id');
+                const deptName = button.getAttribute('data-dept-name');
+                
+                document.getElementById('deptName').textContent = deptName;
+                document.getElementById('deleteDeptForm').action = "{{ url_for('admin.delete_dept', dept_id='') }}" + deptId;
+            });
+        }
+    });
+</script>
+{% endblock %} 
