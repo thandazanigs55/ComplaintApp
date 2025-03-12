@@ -126,7 +126,8 @@
         const grievanceTable = document.getElementById('grievancesTable');
         const grievanceRows = grievanceTable?.querySelectorAll('tbody tr');
         
-        if (searchInput && grievanceRows) {
+        if (searchInput && grievanceRows) 
+        {
             searchInput.addEventListener('keyup', function() {
                 const searchTerm = this.value.toLowerCase();
                 
