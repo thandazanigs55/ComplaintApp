@@ -43,7 +43,6 @@
                                     <tr>
                                         <th>Department Name</th>
                                         <th>Description</th>
-                                        <th>Created</th>
                                         <th>Grievances</th>
                                         <th>Actions</th>
                                     </tr>
@@ -53,13 +52,6 @@
                                         <tr class="department-item">
                                             <td>{{ dept.name }}</td>
                                             <td>{{ dept.description or 'No description' }}</td>
-                                            <td>
-                                                {% if dept.createdAt %}
-                                                    {{ dept.createdAt.strftime('%Y-%m-%d') if dept.createdAt is not string else dept.createdAt }}
-                                                {% else %}
-                                                    N/A
-                                                {% endif %}
-                                            </td>
                                             <td>
                                                 <a href="{{ url_for('admin.view_department_grievances', department=dept.name) }}" class="btn btn-outline-primary btn-sm">
                                                     <i class="fas fa-list me-1"></i> View Grievances
