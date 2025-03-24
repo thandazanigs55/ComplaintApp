@@ -39,17 +39,29 @@ def handle_file_upload(file, grievance_id):
     """
     if not file or not file.filename:
         return False, 'No file selected.', 'warning', None
+    
+    print(f"Attempting to upload file: {file.filename} for grievance: {grievance_id}")
         
     try:
+        # Add more detailed logging
+        print(f"File details - Name: {file.filename}, Size: {len(file.read())} bytes")
+        file.seek(0)  # Reset file pointer after reading
+        
         file_url = upload_attachment(file, grievance_id)
         if file_url:
+            print(f"Upload successful, URL: {file_url}")
             return True, f'Successfully uploaded {file.filename}', 'success', file_url
+        
+        print("Upload failed: upload_attachment returned None")
         return False, 'Failed to upload attachment. Please try again.', 'danger', None
     except ValueError as ve:
-        return False, f'Validation error: {str(ve)}', 'warning', None
+        error_message = str(ve)
+        print(f"Validation error during upload: {error_message}")
+        return False, f'Validation error: {error_message}', 'warning', None
     except Exception as e:
-        print(f"Error uploading attachment: {str(e)}")  # Log the actual error
-        return False, 'An unexpected error occurred while uploading the file. Please try again.', 'danger', None
+        error_message = str(e)
+        print(f"Unexpected error during upload: {error_message}")
+        return False, f'An error occurred while uploading the file: {error_message}', 'danger', None
 
 @student_bp.route('/dashboard')
 @login_required(role='student')

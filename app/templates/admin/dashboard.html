@@ -101,27 +101,21 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Recent Grievances</h5>
-                    <div>
-                        <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-primary btn-sm me-2">
-                            <i class="fas fa-chart-bar me-1"></i> View Reports
-                        </a>
-                        <div class="dropdown d-inline-block">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                Filter
+                    <div class="d-flex gap-2">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                Filter by Status
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
-                                <li><h6 class="dropdown-header">Status</h6></li>
                                 <li><a class="dropdown-item" href="#" data-filter="all">All Grievances</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.open_grievances') }}">Open Grievances</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.resolved_grievances') }}">Resolved Grievances</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                
-                                <li><h6 class="dropdown-header">Department</h6></li>
-                                {% for dept, count in department_counts.items() %}
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.view_department_grievances', department=dept) }}">{{ dept }} ({{ count }})</a></li>
+                                {% for status_key, status_label in status_options.items() %}
+                                    <li><a class="dropdown-item" href="#" data-filter="{{ status_key }}">{{ status_label }}</a></li>
                                 {% endfor %}
                             </ul>
                         </div>
+                        <a href="{{ url_for('admin.all_grievances') }}" class="btn btn-primary">
+                            <i class="fas fa-list me-1"></i> View All
+                        </a>
                     </div>
                 </div>
                 
@@ -135,62 +129,103 @@
                                         <th>Title</th>
                                         <th>Department</th>
                                         <th>Status</th>
+                                        <th>Student</th>
                                         <th>Date Submitted</th>
-                                        <th>Last Updated</th>
-                                        <th></th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for grievance in grievances[:10] %}
                                         <tr class="grievance-item" data-status="{{ grievance.status }}">
                                             <td>#{{ grievance.id[:8] }}</td>
-                                            <td class="grievance-title">{{ grievance.title }}</td>
+                                            <td>
+                                                <a href="{{ url_for('admin.grievance_detail', grievance_id=grievance.id) }}" class="text-decoration-none grievance-title">
+                                                    {{ grievance.title }}
+                                                </a>
+                                            </td>
                                             <td>
                                                 <a href="{{ url_for('admin.view_department_grievances', department=grievance.department) }}" class="text-decoration-none">
                                                     {{ grievance.department }}
                                                 </a>
                                             </td>
                                             <td>
-                                                <span class="status-badge status-{{ grievance.status }}">
-                                                    {{ grievance.status|replace('_', ' ')|title }}
-                                                </span>
+                                                <div class="dropdown">
+                                                    <span class="status-badge status-{{ grievance.status }} dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                                                        {{ grievance.status|replace('_', ' ')|title }}
+                                                    </span>
+                                                    <ul class="dropdown-menu">
+                                                        {% for status_key, status_label in status_options.items() %}
+                                                            {% if status_key != grievance.status %}
+                                                                <li>
+                                                                    <form action="{{ url_for('admin.update_status', grievance_id=grievance.id) }}" method="POST" class="status-update-form">
+                                                                        <input type="hidden" name="status" value="{{ status_key }}">
+                                                                        <button type="submit" class="dropdown-item">
+                                                                            {{ status_label }}
+                                                                        </button>
+                                                                    </form>
+                                                                </li>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
                                             </td>
-                                            <td class="grievance-meta">
+                                            <td>
+                                                {% if student %}
+                                                    {{ student.displayName }}
+                                                {% else %}
+                                                    <span class="text-muted">Unknown</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
                                                 {% if grievance.createdAt %}
                                                     {{ grievance.createdAt.strftime('%Y-%m-%d %H:%M') if grievance.createdAt is not string else grievance.createdAt }}
                                                 {% else %}
                                                     N/A
                                                 {% endif %}
                                             </td>
-                                            <td class="grievance-meta">
-                                                {% if grievance.updatedAt %}
-                                                    {{ grievance.updatedAt.strftime('%Y-%m-%d %H:%M') if grievance.updatedAt is not string else grievance.updatedAt }}
-                                                {% else %}
-                                                    N/A
-                                                {% endif %}
-                                            </td>
                                             <td>
-                                                <a href="{{ url_for('admin.grievance_detail', grievance_id=grievance.id) }}" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-eye"></i> View
-                                                </a>
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('admin.grievance_detail', grievance_id=grievance.id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#noteModal{{ grievance.id }}">
+                                                        <i class="fas fa-comment-alt"></i>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
+                                        
+                                        <!-- Note Modal -->
+                                        <div class="modal fade" id="noteModal{{ grievance.id }}" tabindex="-1" aria-labelledby="noteModalLabel{{ grievance.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form action="{{ url_for('admin.update_status', grievance_id=grievance.id) }}" method="POST">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="noteModalLabel{{ grievance.id }}">Add Note to Grievance #{{ grievance.id[:8] }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <input type="hidden" name="status" value="{{ grievance.status }}">
+                                                            <div class="mb-3">
+                                                                <label for="note{{ grievance.id }}" class="form-label">Note</label>
+                                                                <textarea class="form-control" id="note{{ grievance.id }}" name="note" rows="3" required></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Add Note</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        
-                        {% if grievances|length > 10 %}
-                            <div class="text-center py-3 border-top">
-                                <a href="{{ url_for('admin.reports') }}" class="text-decoration-none">
-                                    View All Grievances <i class="fas fa-arrow-right ms-1"></i>
-                                </a>
-                            </div>
-                        {% endif %}
                     {% else %}
                         <div class="text-center py-5">
-                            <h5 class="text-muted">No Grievances Found</h5>
-                            <p class="text-muted">There are currently no grievances in the system.</p>
+                            <p class="text-muted mb-0">No grievances found.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -207,8 +242,13 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
+<script type="text/javascript">
+    // Initialize data from server-side
+    const departmentData = JSON.parse('{{ department_counts | tojson | safe }}');
+    const statusData = JSON.parse('{{ status_counts | tojson | safe }}');
+    const statusLabels = JSON.parse('{{ status_options | tojson | safe }}');
+
+    document.addEventListener('DOMContentLoaded', () => {
         // Filter grievances by status
         const filterLinks = document.querySelectorAll('[data-filter]');
         const grievanceItems = document.querySelectorAll('.grievance-item');
@@ -233,12 +273,16 @@
             });
         });
         
-        // Department Chart
-        const departmentData = {};
-        {% for dept, count in department_counts.items() %}
-            departmentData['{{ dept }}'] = {{ count }};
-        {% endfor %}
+        // Handle status update forms
+        document.querySelectorAll('.status-update-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Are you sure you want to update the status?')) {
+                    e.preventDefault();
+                }
+            });
+        });
         
+        // Department Chart
         if (document.getElementById('departmentChart') && Object.keys(departmentData).length > 0) {
             const departmentChart = new Chart(
                 document.getElementById('departmentChart'),
@@ -279,20 +323,21 @@
         }
         
         // Status Chart
-        const statusData = {};
-        {% for status, count in status_counts.items() %}
-            statusData['{{ status_options.get(status, status|replace("_", " ")|title) }}'] = {{ count }};
-        {% endfor %}
-        
         if (document.getElementById('statusChart') && Object.keys(statusData).length > 0) {
+            // Convert status data to use proper labels
+            const formattedStatusData = {};
+            Object.entries(statusData).forEach(([status, count]) => {
+                formattedStatusData[statusLabels[status] || status] = count;
+            });
+            
             const statusChart = new Chart(
                 document.getElementById('statusChart'),
                 {
                     type: 'doughnut',
                     data: {
-                        labels: Object.keys(statusData),
+                        labels: Object.keys(formattedStatusData),
                         datasets: [{
-                            data: Object.values(statusData),
+                            data: Object.values(formattedStatusData),
                             backgroundColor: [
                                 '#FFC107', // Pending
                                 '#17A2B8', // In Progress
