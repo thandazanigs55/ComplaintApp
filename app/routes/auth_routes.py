@@ -56,6 +56,8 @@ def login():
                 return redirect(url_for('admin.dashboard'))
             elif user_data.get('role') == 'student':
                 return redirect(url_for('student.dashboard'))
+            elif user_data.get('role') == 'department':
+                return redirect(url_for('department.dashboard'))
             else:
                 return redirect(url_for('auth.login'))
             
