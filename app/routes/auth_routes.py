@@ -19,6 +19,8 @@ def login_required(role=None):
                     return redirect(url_for('student.dashboard'))
                 elif session.get('user_data', {}).get('role') == 'admin':
                     return redirect(url_for('admin.dashboard'))
+                elif session.get('user_data', {}).get('role') == 'department':
+                    return redirect(url_for('department.dashboard'))
                 else:
                     return redirect(url_for('auth.login'))
             
