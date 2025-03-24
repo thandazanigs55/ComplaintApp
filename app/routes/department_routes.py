@@ -12,7 +12,7 @@ department_bp = Blueprint('department', __name__, url_prefix='/department')
 def dashboard():
     """Department dashboard showing assigned grievances"""
     # Get department ID from session
-    department_id = session.get('user_id')
+    department_id = session.get('user')
     department = get_user_by_id(department_id)
     
     if not department:
@@ -30,7 +30,7 @@ def dashboard():
 @login_required(role='department')
 def view_grievance(grievance_id):
     """View a specific grievance and its details"""
-    department_id = session.get('user_id')
+    department_id = session.get('user')
     department = get_user_by_id(department_id)
     
     if not department:
@@ -61,7 +61,7 @@ def view_grievance(grievance_id):
 @login_required(role='department')
 def submit_response(grievance_id):
     """Submit a response to a grievance"""
-    department_id = session.get('user_id')
+    department_id = session.get('user')
     department = get_user_by_id(department_id)
     
     if not department:

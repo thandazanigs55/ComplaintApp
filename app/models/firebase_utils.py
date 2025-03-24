@@ -284,22 +284,30 @@ def get_resolved_grievances():
         print(f"Error getting resolved grievances: {e}")
         return []
 
-def get_department_grievances(department):
-    """Get all grievances for a specific department"""
+def get_department_grievances(department_name):
+    """Get all grievances assigned to a specific department"""
     try:
-        grievances = db.collection('grievances').where('department', '==', department).order_by('createdAt', direction=firestore.Query.DESCENDING).get()
+        # Query grievances for the specific department
+        grievances_ref = db.collection('grievances').where('department', '==', department_name)
+        grievances = grievances_ref.get()
         
         result = []
-        for doc in grievances:
-            grievance_data = doc.to_dict()
-            grievance_data['id'] = doc.id
+        for grievance in grievances:
+            grievance_data = grievance.to_dict()
+            grievance_data['id'] = grievance.id
             
             # Format timestamps
             grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
             grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
             
-            result.append(grievance_data)
+            # Format timestamps in status history
+            if 'statusHistory' in grievance_data and grievance_data['statusHistory']:
+                for status_entry in grievance_data['statusHistory']:
+                    if 'timestamp' in status_entry:
+                        status_entry['timestamp'] = format_timestamp(status_entry['timestamp'])
             
+            result.append(grievance_data)
+        
         return result
     except Exception as e:
         print(f"Error getting department grievances: {e}")

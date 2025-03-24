@@ -50,6 +50,7 @@ def login():
             session['user'] = user_id
             session['user_data'] = user_data
             session['email'] = email
+            session['role'] = user_data.get('role', '')
             
             flash('Login successful!', 'success')
             
@@ -61,6 +62,7 @@ def login():
             elif user_data.get('role') == 'department':
                 return redirect(url_for('department.dashboard'))
             else:
+                flash('Invalid user role.', 'danger')
                 return redirect(url_for('auth.login'))
             
         except Exception as e:
