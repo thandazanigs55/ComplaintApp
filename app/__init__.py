@@ -26,10 +26,12 @@ def create_app():
     from app.routes.student_routes import student_bp
     from app.routes.admin_routes import admin_bp
     from app.routes.main_routes import main_bp
+    from app.routes.department_routes import department_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(student_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(department_bp)
     
     return app 

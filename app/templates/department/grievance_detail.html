@@ -1,0 +1,148 @@
+{% extends 'shared/layout.html' %}
+
+{% block title %}Grievance Details | DUT Student Grievance Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('department.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Grievance Details</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">Grievance Details</h1>
+                <a href="{{ url_for('department.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Grievance Information -->
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Main Grievance Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ grievance.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Description</h6>
+                        <p class="mb-0">{{ grievance.description }}</p>
+                    </div>
+                    
+                    {% if grievance.attachments %}
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-2">Attachments</h6>
+                            <ul class="list-unstyled">
+                                {% for attachment in grievance.attachments %}
+                                    <li>
+                                        <a href="{{ attachment.url }}" target="_blank" class="text-primary">
+                                            <i class="fas fa-paperclip me-1"></i>
+                                            {{ attachment.filename }}
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Status</h6>
+                            <span class="badge bg-{{ grievance.status | status_color }}">
+                                {{ grievance.status | title | replace('_', ' ') }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Created</h6>
+                            <p class="mb-0">{{ grievance.createdAt.strftime('%Y-%m-%d %H:%M') if grievance.createdAt else 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Department Response Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Submit Response</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('department.submit_response', grievance_id=grievance.id) }}" method="POST">
+                        <div class="mb-3">
+                            <label for="response" class="form-label">Your Response</label>
+                            <textarea class="form-control" id="response" name="response" rows="4" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i> Submit Response
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Previous Responses -->
+            {% if grievance.departmentResponses %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Previous Responses</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for response in grievance.departmentResponses|sort(attribute='timestamp', reverse=true) %}
+                            <div class="border-bottom mb-3 pb-3">
+                                <p class="mb-2">{{ response.text }}</p>
+                                <small class="text-muted">
+                                    Submitted on {{ response.timestamp.strftime('%Y-%m-%d %H:%M') if response.timestamp else 'N/A' }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Student Information -->
+            {% if student %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Student Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Name:</strong> {{ student.displayName }}</p>
+                        <p class="mb-0"><strong>Email:</strong> {{ student.email }}</p>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Status History -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Status History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for status in grievance.statusHistory|sort(attribute='timestamp', reverse=true) %}
+                            <div class="list-group-item">
+                                <h6 class="mb-1">
+                                    <span class="badge bg-{{ status.status | status_color }}">
+                                        {{ status.status | title | replace('_', ' ') }}
+                                    </span>
+                                </h6>
+                                <p class="mb-1">{{ status.note }}</p>
+                                <small class="text-muted">
+                                    {{ status.timestamp.strftime('%Y-%m-%d %H:%M') if status.timestamp else 'N/A' }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
