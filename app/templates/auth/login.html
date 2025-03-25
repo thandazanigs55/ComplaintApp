@@ -16,10 +16,7 @@
                 <div class="mb-3">
                     <label for="email" class="form-label required">Email Address</label>
                     <input type="email" class="form-control" id="email" name="email" required 
-                           placeholder="e.g., student@dut.ac.za or department@dut.ac.za">
-                    <div class="form-text">
-                        Use your DUT email address to login. Department users should use their department email.
-                    </div>
+                           placeholder="Enter your DUT email address">
                 </div>
                 
                 <div class="mb-3">
@@ -34,24 +31,7 @@
             
             <div class="text-center mt-4">
                 <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register as Student</a></p>
-                <small class="text-muted">Department accounts are created by administrators.</small>
             </div>
-        </div>
-    </div>
-    
-    <div class="card mt-4">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Department Login Information</h5>
-        </div>
-        <div class="card-body">
-            <p class="mb-3">For department users, use your department email address:</p>
-            <ul class="list-unstyled mb-0">
-                <li><i class="fas fa-university me-2"></i>IT Department: it.dept@dut.ac.za</li>
-                <li><i class="fas fa-university me-2"></i>Engineering: engineering.dept@dut.ac.za</li>
-                <li><i class="fas fa-university me-2"></i>Business Studies: business.dept@dut.ac.za</li>
-                <li><i class="fas fa-university me-2"></i>Applied Sciences: science.dept@dut.ac.za</li>
-                <li><i class="fas fa-university me-2"></i>Health Sciences: health.dept@dut.ac.za</li>
-            </ul>
         </div>
     </div>
     
