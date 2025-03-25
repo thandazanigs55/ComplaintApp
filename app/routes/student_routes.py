@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from app.routes.auth_routes import login_required
 from app.models.firebase_utils import (
     create_grievance, get_student_grievances, get_grievance_by_id, 
-    upload_attachment, get_all_departments
+    upload_file, get_all_departments
 )
 from app.models.email_utils import send_new_grievance_notification
 from werkzeug.utils import secure_filename
@@ -47,12 +47,12 @@ def handle_file_upload(file, grievance_id):
         print(f"File details - Name: {file.filename}, Size: {len(file.read())} bytes")
         file.seek(0)  # Reset file pointer after reading
         
-        file_url = upload_attachment(file, grievance_id)
+        file_url = upload_file(file, f'attachments/{grievance_id}')
         if file_url:
             print(f"Upload successful, URL: {file_url}")
             return True, f'Successfully uploaded {file.filename}', 'success', file_url
         
-        print("Upload failed: upload_attachment returned None")
+        print("Upload failed: upload_file returned None")
         return False, 'Failed to upload attachment. Please try again.', 'danger', None
     except ValueError as ve:
         error_message = str(ve)
