@@ -19,6 +19,8 @@ def login_required(role=None):
                     return redirect(url_for('student.dashboard'))
                 elif session.get('user_data', {}).get('role') == 'admin':
                     return redirect(url_for('admin.dashboard'))
+                elif session.get('user_data', {}).get('role') == 'department':
+                    return redirect(url_for('department.dashboard'))
                 else:
                     return redirect(url_for('auth.login'))
             
@@ -48,6 +50,7 @@ def login():
             session['user'] = user_id
             session['user_data'] = user_data
             session['email'] = email
+            session['role'] = user_data.get('role', '')
             
             flash('Login successful!', 'success')
             
@@ -56,7 +59,10 @@ def login():
                 return redirect(url_for('admin.dashboard'))
             elif user_data.get('role') == 'student':
                 return redirect(url_for('student.dashboard'))
+            elif user_data.get('role') == 'department':
+                return redirect(url_for('department.dashboard'))
             else:
+                flash('Invalid user role.', 'danger')
                 return redirect(url_for('auth.login'))
             
         except Exception as e:

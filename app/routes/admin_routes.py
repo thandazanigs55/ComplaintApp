@@ -128,8 +128,6 @@ def reports():
     department_counts = {}
     monthly_counts = {}
     
-    db = firestore.client()
-    
     for grievance in grievances:
         # Count by status
         status = grievance.get('status', 'pending')
@@ -148,16 +146,37 @@ def reports():
         # Count by month (if createdAt is available)
         if 'createdAt' in grievance and grievance['createdAt']:
             created_at = grievance['createdAt']
-            if isinstance(created_at, firestore.SERVER_TIMESTAMP):
-                # Handle server timestamp
-                continue
-                
-            # Format: YYYY-MM
-            month_key = created_at.strftime('%Y-%m') if hasattr(created_at, 'strftime') else 'Unknown'
-            if month_key in monthly_counts:
-                monthly_counts[month_key] += 1
+            
+            # If created_at is already a datetime object, use it directly
+            if hasattr(created_at, 'strftime'):
+                month_key = created_at.strftime('%Y-%m')
+                if month_key in monthly_counts:
+                    monthly_counts[month_key] += 1
+                else:
+                    monthly_counts[month_key] = 1
             else:
-                monthly_counts[month_key] = 1
+                # Try to convert string to datetime
+                try:
+                    from datetime import datetime
+                    if isinstance(created_at, str):
+                        # Try different date formats
+                        for fmt in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d']:
+                            try:
+                                dt = datetime.strptime(created_at[:19], fmt)
+                                month_key = dt.strftime('%Y-%m')
+                                if month_key in monthly_counts:
+                                    monthly_counts[month_key] += 1
+                                else:
+                                    monthly_counts[month_key] = 1
+                                break
+                            except ValueError:
+                                continue
+                except Exception as e:
+                    print(f"Error processing date {created_at}: {e}")
+                    continue
+    
+    # Sort monthly counts by date
+    monthly_counts = dict(sorted(monthly_counts.items()))
     
     return render_template('admin/reports.html', 
                           status_counts=status_counts,

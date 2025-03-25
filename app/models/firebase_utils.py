@@ -173,9 +173,18 @@ def format_timestamp(timestamp):
     
     if isinstance(timestamp, str):
         try:
-            return datetime.fromisoformat(timestamp)
+            # Try parsing ISO format first
+            return datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
         except ValueError:
-            return timestamp
+            try:
+                # Try standard format
+                return datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                try:
+                    # Try parsing just the date part if time is not included
+                    return datetime.strptime(timestamp[:19], '%Y-%m-%dT%H:%M:%S')
+                except ValueError:
+                    return timestamp
     
     return timestamp
 
@@ -275,22 +284,30 @@ def get_resolved_grievances():
         print(f"Error getting resolved grievances: {e}")
         return []
 
-def get_department_grievances(department):
-    """Get all grievances for a specific department"""
+def get_department_grievances(department_name):
+    """Get all grievances assigned to a specific department"""
     try:
-        grievances = db.collection('grievances').where('department', '==', department).order_by('createdAt', direction=firestore.Query.DESCENDING).get()
+        # Query grievances for the specific department
+        grievances_ref = db.collection('grievances').where('department', '==', department_name)
+        grievances = grievances_ref.get()
         
         result = []
-        for doc in grievances:
-            grievance_data = doc.to_dict()
-            grievance_data['id'] = doc.id
+        for grievance in grievances:
+            grievance_data = grievance.to_dict()
+            grievance_data['id'] = grievance.id
             
             # Format timestamps
             grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
             grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
             
-            result.append(grievance_data)
+            # Format timestamps in status history
+            if 'statusHistory' in grievance_data and grievance_data['statusHistory']:
+                for status_entry in grievance_data['statusHistory']:
+                    if 'timestamp' in status_entry:
+                        status_entry['timestamp'] = format_timestamp(status_entry['timestamp'])
             
+            result.append(grievance_data)
+        
         return result
     except Exception as e:
         print(f"Error getting department grievances: {e}")
@@ -686,4 +703,54 @@ def reset_user_password(user_id, new_password):
         return True, "Password reset successfully"
     except Exception as e:
         print(f"Error resetting password: {e}")
-        return False, f"Error: {str(e)}" 
+        return False, f"Error: {str(e)}"
+
+def submit_department_response(grievance_id, response_text, department_id):
+    """Submit a department's response to a grievance"""
+    try:
+        # Get current timestamp
+        current_time = datetime.now().isoformat()
+        
+        # Get the grievance document
+        grievance_ref = db.collection('grievances').document(grievance_id)
+        grievance = grievance_ref.get()
+        
+        if not grievance.exists:
+            raise ValueError("Grievance not found")
+            
+        grievance_data = grievance.to_dict()
+        
+        # Create response entry
+        response_data = {
+            'text': response_text,
+            'departmentId': department_id,
+            'timestamp': current_time
+        }
+        
+        # Update grievance with response
+        if 'departmentResponses' not in grievance_data:
+            grievance_data['departmentResponses'] = []
+        
+        grievance_data['departmentResponses'].append(response_data)
+        grievance_data['updatedAt'] = current_time
+        
+        # Update status to indicate department has responded
+        status_update = {
+            'status': 'under_review',
+            'note': 'Department has submitted a response',
+            'timestamp': current_time
+        }
+        
+        if 'statusHistory' not in grievance_data:
+            grievance_data['statusHistory'] = []
+        
+        grievance_data['statusHistory'].append(status_update)
+        grievance_data['status'] = 'under_review'
+        
+        # Update the document
+        grievance_ref.update(grievance_data)
+        
+        return True
+    except Exception as e:
+        print(f"Error submitting department response: {e}")
+        return False 
