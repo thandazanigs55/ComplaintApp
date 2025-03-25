@@ -1,3 +1,4 @@
 [config]
 SCM_DO_BUILD_DURING_DEPLOYMENT=true
-POST_BUILD_COMMAND=pip install -r requirements.txt 
+POST_BUILD_COMMAND=pip install -r requirements.txt && pip install gunicorn
+PYTHON_VERSION=3.9 
