@@ -68,10 +68,25 @@ def submit_response(grievance_id):
         flash('Department not found.', 'danger')
         return redirect(url_for('auth.logout'))
     
+    # Get the grievance first
+    grievance = get_grievance_by_id(grievance_id)
+    if not grievance:
+        flash('Grievance not found.', 'danger')
+        return redirect(url_for('department.dashboard'))
+    
+    # Check if grievance belongs to this department
+    if grievance.get('department') != department.get('displayName'):
+        flash('You do not have permission to respond to this grievance.', 'danger')
+        return redirect(url_for('department.dashboard'))
+    
     response_text = request.form.get('response')
     
     if not response_text:
         flash('Response text is required.', 'danger')
+        return redirect(url_for('department.view_grievance', grievance_id=grievance_id))
+    
+    if len(response_text.strip()) < 10:
+        flash('Response must be at least 10 characters long.', 'danger')
         return redirect(url_for('department.view_grievance', grievance_id=grievance_id))
     
     # Submit the response
@@ -82,8 +97,8 @@ def submit_response(grievance_id):
     )
     
     if success:
-        flash('Response submitted successfully.', 'success')
+        flash('Response submitted successfully and sent to admin for review.', 'success')
     else:
-        flash('Failed to submit response.', 'danger')
+        flash('Failed to submit response. Please try again.', 'danger')
     
     return redirect(url_for('department.view_grievance', grievance_id=grievance_id)) 

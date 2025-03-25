@@ -77,21 +77,18 @@ def login():
                 session.clear()
                 return render_template('auth/login.html')
             
+        except ValueError as e:
+            error_msg = str(e)
+            print(f"Login error: {error_msg}")
+            
+            # Use the specific error message from Firebase utils
+            flash(error_msg, 'danger')
+            return render_template('auth/login.html')
+            
         except Exception as e:
             error_msg = str(e)
-            print(f"Login error: {error_msg}")  # For debugging
-            
-            if 'INVALID_LOGIN_CREDENTIALS' in error_msg:
-                flash('Invalid email or password. Please try again or reset your password.', 'danger')
-            elif 'TOO_MANY_ATTEMPTS_TRY_LATER' in error_msg:
-                flash('Too many login attempts. Please try again later.', 'danger')
-            elif 'EMAIL_NOT_FOUND' in error_msg:
-                flash('Email not found. Please check your email or register if you are a new student.', 'danger')
-            elif 'INVALID_PASSWORD' in error_msg:
-                flash('Invalid password. Please try again or reset your password.', 'danger')
-            else:
-                flash('An error occurred during login. Please try again or contact IT Helpdesk.', 'danger')
-            
+            print(f"Unexpected login error: {error_msg}")
+            flash('An unexpected error occurred. Please try again later.', 'danger')
             return render_template('auth/login.html')
     
     return render_template('auth/login.html')

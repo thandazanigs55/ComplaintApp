@@ -76,10 +76,15 @@
                     <form action="{{ url_for('department.submit_response', grievance_id=grievance.id) }}" method="POST">
                         <div class="mb-3">
                             <label for="response" class="form-label">Your Response</label>
-                            <textarea class="form-control" id="response" name="response" rows="4" required></textarea>
+                            <textarea class="form-control" id="response" name="response" rows="4" 
+                                    required minlength="10" 
+                                    placeholder="Enter your detailed response here (minimum 10 characters)"></textarea>
+                            <div class="form-text">
+                                Your response will be sent to the admin for review before being finalized.
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-1"></i> Submit Response
+                            <i class="fas fa-paper-plane me-1"></i> Submit Response for Review
                         </button>
                     </form>
                 </div>
@@ -94,10 +99,17 @@
                     <div class="card-body">
                         {% for response in grievance.departmentResponses|sort(attribute='timestamp', reverse=true) %}
                             <div class="border-bottom mb-3 pb-3">
-                                <p class="mb-2">{{ response.text }}</p>
-                                <small class="text-muted">
-                                    Submitted on {{ response.timestamp.strftime('%Y-%m-%d %H:%M') if response.timestamp else 'N/A' }}
-                                </small>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <p class="mb-2">{{ response.text }}</p>
+                                        <small class="text-muted">
+                                            Submitted on {{ response.timestamp.strftime('%Y-%m-%d %H:%M') if response.timestamp else 'N/A' }}
+                                        </small>
+                                    </div>
+                                    {% if response.status == 'pending_admin_review' %}
+                                        <span class="badge bg-warning text-dark">Pending Admin Review</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         {% endfor %}
                     </div>

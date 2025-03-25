@@ -11,6 +11,17 @@ from datetime import datetime
 # Load environment variables
 load_dotenv()
 
+# Pyrebase configuration for client-side authentication
+firebase_config = {
+    "apiKey": os.getenv("Web_API_Key"),
+    "authDomain": "studentgrievancems.firebaseapp.com",
+    "projectId": "studentgrievancems",
+    "storageBucket": "studentgrievancems.appspot.com",
+    "messagingSenderId": "1015387144997",
+    "appId": "1:1015387144997:web:c0c7a2b8d9c6a7c0c7a2b8",
+    "databaseURL": "https://studentgrievancems-default-rtdb.firebaseio.com"
+}
+
 def initialize_firebase():
     """Initialize Firebase Admin SDK and Firestore"""
     try:
@@ -19,25 +30,37 @@ def initialize_firebase():
     except ValueError:
         # If no app exists, initialize with credentials
         try:
-            # Load service account
-            service_account_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
-            cred = credentials.Certificate(service_account_path)
+            # First try to get credentials from environment variable
+            cred_json = os.getenv('FIREBASE_CREDENTIALS')
+            if cred_json:
+                cred_dict = json.loads(cred_json)
+                cred = credentials.Certificate(cred_dict)
+            else:
+                # Fallback to service account file
+                service_account_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
+                cred = credentials.Certificate(service_account_path)
+            
             return firebase_admin.initialize_app(cred)
         except Exception as e:
             print(f"Error initializing Firebase: {e}")
             raise
 
-# Pyrebase configuration for client-side authentication
-firebase_config = {
-    "apiKey": os.getenv("Web_API_Key"),
-    "authDomain": "studentgrievancems.firebaseapp.com",
-    "projectId": "studentgrievancems",
-    "storageBucket": "studentgrievancems.appspot.com",
-    "messagingSenderId": os.getenv("MESSAGING_SENDER_ID", ""),
-    "appId": os.getenv("APP_ID", ""),
-    "databaseURL": "https://studentgrievancems-default-rtdb.firebaseio.com",
-    "serviceAccount": "service_account.json"
-}
+# Initialize Firebase services
+try:
+    # Initialize Pyrebase
+    firebase = pyrebase.initialize_app(firebase_config)
+    pyrebase_auth = firebase.auth()
+    
+    # Initialize Firebase Admin SDK
+    app = initialize_firebase()
+    
+    # Initialize Firestore
+    db = firestore.client()
+    
+    print("Firebase services initialized successfully")
+except Exception as e:
+    print(f"Error initializing Firebase services: {e}")
+    raise
 
 # Define a dummy storage class for development/testing
 class DummyStorage:
@@ -56,16 +79,6 @@ class DummyStorage:
     def delete(self, *args, **kwargs):
         print("Storage delete attempted but storage is not available")
         return False
-
-# Initialize Pyrebase
-firebase = pyrebase.initialize_app(firebase_config)
-pyrebase_auth = firebase.auth()
-
-# Initialize Firebase Admin SDK
-app = initialize_firebase()
-
-# Initialize Firestore
-db = firestore.client()
 
 # Initialize storage only after other services
 try:
@@ -103,11 +116,31 @@ def create_user(email, password, display_name, role='student'):
 def login_user(email, password):
     """Login a user with Firebase Authentication"""
     try:
+        # Attempt to sign in with email and password
         user = pyrebase_auth.sign_in_with_email_and_password(email, password)
+        
+        # Verify the token
+        auth.verify_id_token(user['idToken'])
+        
         return user
+    except auth.InvalidIdTokenError:
+        print("Invalid ID token")
+        raise ValueError("Authentication failed - invalid token")
     except Exception as e:
-        print(f"Login error: {e}")
-        raise e
+        error_message = str(e)
+        print(f"Login error: {error_message}")
+        
+        # Map Firebase error codes to user-friendly messages
+        if "INVALID_PASSWORD" in error_message:
+            raise ValueError("Invalid password")
+        elif "EMAIL_NOT_FOUND" in error_message:
+            raise ValueError("Email not found")
+        elif "INVALID_EMAIL" in error_message:
+            raise ValueError("Invalid email format")
+        elif "USER_DISABLED" in error_message:
+            raise ValueError("Account has been disabled")
+        else:
+            raise ValueError("Authentication failed")
 
 def get_user_by_id(uid):
     """Get user data from Firestore by user ID"""
@@ -720,11 +753,17 @@ def submit_department_response(grievance_id, response_text, department_id):
             
         grievance_data = grievance.to_dict()
         
+        # Get department info
+        department = get_user_by_id(department_id)
+        department_name = department.get('displayName', 'Unknown Department')
+        
         # Create response entry
         response_data = {
             'text': response_text,
             'departmentId': department_id,
-            'timestamp': current_time
+            'departmentName': department_name,
+            'timestamp': current_time,
+            'status': 'pending_admin_review'  # New status to indicate admin needs to review
         }
         
         # Update grievance with response
@@ -734,10 +773,10 @@ def submit_department_response(grievance_id, response_text, department_id):
         grievance_data['departmentResponses'].append(response_data)
         grievance_data['updatedAt'] = current_time
         
-        # Update status to indicate department has responded
+        # Update status to indicate response is pending admin review
         status_update = {
-            'status': 'under_review',
-            'note': 'Department has submitted a response',
+            'status': 'pending_admin_review',
+            'note': f'Response submitted by {department_name}, awaiting admin review',
             'timestamp': current_time
         }
         
@@ -745,10 +784,26 @@ def submit_department_response(grievance_id, response_text, department_id):
             grievance_data['statusHistory'] = []
         
         grievance_data['statusHistory'].append(status_update)
-        grievance_data['status'] = 'under_review'
+        grievance_data['status'] = 'pending_admin_review'
         
-        # Update the document
-        grievance_ref.update(grievance_data)
+        # Create admin notification
+        notification_ref = db.collection('notifications').document()
+        notification_data = {
+            'type': 'department_response',
+            'grievanceId': grievance_id,
+            'departmentId': department_id,
+            'departmentName': department_name,
+            'timestamp': current_time,
+            'status': 'unread',
+            'message': f'New response from {department_name} requires review',
+            'targetRole': 'admin'
+        }
+        
+        # Update the documents in a batch
+        batch = db.batch()
+        batch.update(grievance_ref, grievance_data)
+        batch.set(notification_ref, notification_data)
+        batch.commit()
         
         return True
     except Exception as e:
