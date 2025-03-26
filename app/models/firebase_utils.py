@@ -1,13 +1,31 @@
 import os
 import pyrebase
 import firebase_admin
-from firebase_admin import auth, firestore
+from firebase_admin import auth, firestore, credentials
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import uuid
+import json
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
+
+def initialize_firebase():
+    """Initialize Firebase Admin SDK and Firestore"""
+    try:
+        # Try to get existing app
+        return firebase_admin.get_app()
+    except ValueError:
+        # If no app exists, initialize with credentials
+        try:
+            # Load service account
+            service_account_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
+            cred = credentials.Certificate(service_account_path)
+            return firebase_admin.initialize_app(cred)
+        except Exception as e:
+            print(f"Error initializing Firebase: {e}")
+            raise
 
 # Pyrebase configuration for client-side authentication
 firebase_config = {
@@ -15,17 +33,48 @@ firebase_config = {
     "authDomain": "studentgrievancems.firebaseapp.com",
     "projectId": "studentgrievancems",
     "storageBucket": "studentgrievancems.appspot.com",
-    "messagingSenderId": "your-message-sender-id",  # Not required for basic auth
-    "databaseURL": "",  # Not required if not using realtime database
+    "messagingSenderId": os.getenv("MESSAGING_SENDER_ID", ""),
+    "appId": os.getenv("APP_ID", ""),
+    "databaseURL": "https://studentgrievancems-default-rtdb.firebaseio.com",
+    "serviceAccount": "service_account.json"
 }
+
+# Define a dummy storage class for development/testing
+class DummyStorage:
+    def child(self, path):
+        print(f"Storage operation attempted on path {path} but storage is not available")
+        return self
+    
+    def put(self, *args, **kwargs):
+        print("Storage upload attempted but storage is not available")
+        raise ValueError("Firebase Storage is not properly configured")
+        
+    def get_url(self, *args, **kwargs):
+        print("Storage URL request attempted but storage is not available")
+        return ""
+        
+    def delete(self, *args, **kwargs):
+        print("Storage delete attempted but storage is not available")
+        return False
 
 # Initialize Pyrebase
 firebase = pyrebase.initialize_app(firebase_config)
 pyrebase_auth = firebase.auth()
-storage = firebase.storage()
+
+# Initialize Firebase Admin SDK
+app = initialize_firebase()
 
 # Initialize Firestore
 db = firestore.client()
+
+# Initialize storage only after other services
+try:
+    storage = firebase.storage()
+    print("Firebase Storage initialized successfully")
+except Exception as e:
+    print(f"Warning: Error initializing Firebase Storage: {str(e)}")
+    # Use the dummy storage object
+    storage = DummyStorage()
 
 # User Authentication Functions
 def create_user(email, password, display_name, role='student'):
@@ -79,29 +128,33 @@ def create_grievance(student_id, title, description, department, attachments=Non
         if not student_id or not title or not description or not department:
             raise ValueError("Missing required fields")
 
-        # Create initial status history entry
-        initial_status = {
-            'status': 'pending',
-            'timestamp': firestore.SERVER_TIMESTAMP,
-            'note': 'Grievance submitted'
-        }
-        
-        # Create grievance document
+        # Create grievance document with a new ID
         grievance_ref = db.collection('grievances').document()
         
-        # Set the data
+        # Get current timestamp and format as ISO string for consistent storage
+        current_time = datetime.now().isoformat()
+        
+        # Create the initial status
+        initial_status = {
+            'status': 'pending',
+            'note': 'Grievance submitted',
+            'timestamp': current_time
+        }
+        
+        # Prepare the complete grievance data
         grievance_data = {
             'studentId': student_id,
             'title': title,
             'description': description,
             'department': department,
             'status': 'pending',
-            'createdAt': firestore.SERVER_TIMESTAMP,
-            'updatedAt': firestore.SERVER_TIMESTAMP,
+            'createdAt': current_time,
+            'updatedAt': current_time,
             'attachments': attachments if attachments else [],
             'statusHistory': [initial_status]
         }
         
+        # Create the document
         grievance_ref.set(grievance_data)
         
         return grievance_ref.id
@@ -111,6 +164,20 @@ def create_grievance(student_id, title, description, department, attachments=Non
     except Exception as e:
         print(f"Error creating grievance: {e}")
         raise
+
+# Helper function to format timestamps for display
+def format_timestamp(timestamp):
+    """Format timestamp for display, converting ISO strings to datetime objects if needed"""
+    if not timestamp:
+        return None
+    
+    if isinstance(timestamp, str):
+        try:
+            return datetime.fromisoformat(timestamp)
+        except ValueError:
+            return timestamp
+    
+    return timestamp
 
 def get_student_grievances(student_id):
     """Get all grievances for a specific student"""
@@ -122,6 +189,17 @@ def get_student_grievances(student_id):
         for grievance in grievances:
             grievance_data = grievance.to_dict()
             grievance_data['id'] = grievance.id
+            
+            # Format timestamps
+            grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
+            grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
+            
+            # Format timestamps in status history
+            if 'statusHistory' in grievance_data and grievance_data['statusHistory']:
+                for status_entry in grievance_data['statusHistory']:
+                    if 'timestamp' in status_entry:
+                        status_entry['timestamp'] = format_timestamp(status_entry['timestamp'])
+            
             result.append(grievance_data)
             
         return result
@@ -139,6 +217,11 @@ def get_all_grievances():
         for grievance in grievances:
             grievance_data = grievance.to_dict()
             grievance_data['id'] = grievance.id
+            
+            # Format timestamps
+            grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
+            grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
+            
             result.append(grievance_data)
             
         return result
@@ -157,6 +240,11 @@ def get_open_grievances():
         for grievance in grievances:
             grievance_data = grievance.to_dict()
             grievance_data['id'] = grievance.id
+            
+            # Format timestamps
+            grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
+            grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
+            
             result.append(grievance_data)
             
         return result
@@ -175,6 +263,11 @@ def get_resolved_grievances():
         for grievance in grievances:
             grievance_data = grievance.to_dict()
             grievance_data['id'] = grievance.id
+            
+            # Format timestamps
+            grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
+            grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
+            
             result.append(grievance_data)
             
         return result
@@ -186,7 +279,19 @@ def get_department_grievances(department):
     """Get all grievances for a specific department"""
     try:
         grievances = db.collection('grievances').where('department', '==', department).order_by('createdAt', direction=firestore.Query.DESCENDING).get()
-        return [{'id': doc.id, **doc.to_dict()} for doc in grievances]
+        
+        result = []
+        for doc in grievances:
+            grievance_data = doc.to_dict()
+            grievance_data['id'] = doc.id
+            
+            # Format timestamps
+            grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
+            grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
+            
+            result.append(grievance_data)
+            
+        return result
     except Exception as e:
         print(f"Error getting department grievances: {e}")
         return []
@@ -196,16 +301,19 @@ def update_grievance_status(grievance_id, new_status, note=None):
     try:
         grievance_ref = db.collection('grievances').document(grievance_id)
         
+        # Get current timestamp
+        current_time = datetime.now().isoformat()
+        
         # Add status change to history
         status_update = {
             'status': new_status,
-            'timestamp': firestore.SERVER_TIMESTAMP,
+            'timestamp': current_time,
             'note': note if note else f'Status updated to {new_status}'
         }
         
         grievance_ref.update({
             'status': new_status,
-            'updatedAt': firestore.SERVER_TIMESTAMP,
+            'updatedAt': current_time,
             'statusHistory': firestore.ArrayUnion([status_update])
         })
         
@@ -243,25 +351,60 @@ def upload_attachment(file, grievance_id):
         # Check if file is empty
         if file_size == 0:
             raise ValueError("File is empty. Please choose a valid file.")
+
+        # Check if storage is properly configured
+        if isinstance(storage, DummyStorage):
+            # For development purposes, we'll store a reference in Firestore but no actual file
+            print("Using development mode for file storage")
+            file_url = f"dev-storage://attachments/{grievance_id}/{unique_filename}"
+            
+            # Add a note about storage being in development mode
+            current_time = datetime.now().isoformat()
+            grievance_ref = db.collection('grievances').document(grievance_id)
+            attachment_data = {
+                'name': filename,
+                'url': file_url,
+                'uploadedAt': current_time,
+                'size': file_size,
+                'type': file.content_type or 'application/octet-stream',
+                'extension': filename.rsplit('.', 1)[1].lower(),
+                'note': 'File storage is in development mode. Actual file is not stored.'
+            }
+            
+            grievance_ref.update({
+                'attachments': firestore.ArrayUnion([attachment_data]),
+                'updatedAt': current_time
+            })
+            
+            print(f"File reference added to Firestore in development mode: {file_url}")
+            return file_url
         
-        # Upload to Firebase Storage
+        # Upload to Firebase Storage with better error handling
         try:
+            print(f"Uploading file {unique_filename} to path: {file_path}")
             storage.child(file_path).put(file_content)
+            print(f"File upload successful")
         except Exception as e:
-            raise ValueError("Failed to upload file to storage. Please try again.")
+            print(f"Storage upload error: {str(e)}")
+            raise ValueError(f"Failed to upload file to storage: {str(e)}")
         
-        # Get the public URL
+        # Get the public URL with better error handling
         try:
             file_url = storage.child(file_path).get_url(None)
+            print(f"Generated URL: {file_url}")
         except Exception as e:
-            raise ValueError("Failed to generate file URL. Please try again.")
+            print(f"URL generation error: {str(e)}")
+            raise ValueError(f"Failed to generate file URL: {str(e)}")
+        
+        # Get current timestamp
+        current_time = datetime.now().isoformat()
         
         # Add file URL to grievance document
         grievance_ref = db.collection('grievances').document(grievance_id)
         attachment_data = {
             'name': filename,
             'url': file_url,
-            'uploadedAt': firestore.SERVER_TIMESTAMP,
+            'uploadedAt': current_time,
             'size': file_size,
             'type': file.content_type or 'application/octet-stream',
             'extension': filename.rsplit('.', 1)[1].lower()
@@ -270,22 +413,23 @@ def upload_attachment(file, grievance_id):
         try:
             grievance_ref.update({
                 'attachments': firestore.ArrayUnion([attachment_data]),
-                'updatedAt': firestore.SERVER_TIMESTAMP
+                'updatedAt': current_time
             })
         except Exception as e:
             # If we fail to update Firestore, try to delete the uploaded file
             try:
                 storage.delete(file_path)
-            except:
-                pass
-            raise ValueError("Failed to update grievance with attachment information.")
+            except Exception as delete_error:
+                print(f"Failed to delete file after Firestore update error: {str(delete_error)}")
+            print(f"Firestore update error: {str(e)}")
+            raise ValueError(f"Failed to update grievance with attachment information: {str(e)}")
         
         return file_url
     except ValueError as ve:
         print(f"Validation error: {ve}")
         raise
     except Exception as e:
-        print(f"Error uploading attachment: {e}")
+        print(f"Error uploading attachment: {str(e)}")
         return None
 
 def get_grievance_by_id(grievance_id):
@@ -293,7 +437,30 @@ def get_grievance_by_id(grievance_id):
     try:
         grievance_doc = db.collection('grievances').document(grievance_id).get()
         if grievance_doc.exists:
-            return {'id': grievance_doc.id, **grievance_doc.to_dict()}
+            grievance_data = grievance_doc.to_dict()
+            grievance_data['id'] = grievance_doc.id
+            
+            # Format timestamps
+            grievance_data['createdAt'] = format_timestamp(grievance_data.get('createdAt'))
+            grievance_data['updatedAt'] = format_timestamp(grievance_data.get('updatedAt'))
+            
+            # Ensure statusHistory exists and is properly formatted
+            if 'statusHistory' not in grievance_data or not grievance_data['statusHistory']:
+                grievance_data['statusHistory'] = []
+            
+            # Format timestamps in status history
+            if grievance_data['statusHistory']:
+                for status_entry in grievance_data['statusHistory']:
+                    if 'timestamp' in status_entry:
+                        status_entry['timestamp'] = format_timestamp(status_entry['timestamp'])
+                        
+            # Format timestamps in attachments
+            if 'attachments' in grievance_data and grievance_data['attachments']:
+                for attachment in grievance_data['attachments']:
+                    if 'uploadedAt' in attachment:
+                        attachment['uploadedAt'] = format_timestamp(attachment['uploadedAt'])
+                        
+            return grievance_data
         return None
     except Exception as e:
         print(f"Error getting grievance: {e}")

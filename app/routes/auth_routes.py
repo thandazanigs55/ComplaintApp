@@ -60,7 +60,11 @@ def login():
                 return redirect(url_for('auth.login'))
             
         except Exception as e:
-            flash(f'Login failed. {str(e)}', 'danger')
+            error_msg = str(e)
+            if 'INVALID_LOGIN_CREDENTIALS' in error_msg:
+                flash('Invalid Login Credentials', 'danger')
+            else:
+                flash('Login failed. Please try again.', 'danger')
     
     return render_template('auth/login.html')
 

@@ -36,7 +36,11 @@
                             <small class="text-muted d-block">Submitted On</small>
                             <span>
                                 {% if grievance.createdAt %}
-                                    {{ grievance.createdAt.strftime('%Y-%m-%d %H:%M') if grievance.createdAt is not string else grievance.createdAt }}
+                                    {% if grievance.createdAt is string %}
+                                        {{ grievance.createdAt }}
+                                    {% else %}
+                                        {{ grievance.createdAt.strftime('%Y-%m-%d %H:%M') }}
+                                    {% endif %}
                                 {% else %}
                                     N/A
                                 {% endif %}
@@ -46,7 +50,11 @@
                             <small class="text-muted d-block">Last Updated</small>
                             <span>
                                 {% if grievance.updatedAt %}
-                                    {{ grievance.updatedAt.strftime('%Y-%m-%d %H:%M') if grievance.updatedAt is not string else grievance.updatedAt }}
+                                    {% if grievance.updatedAt is string %}
+                                        {{ grievance.updatedAt }}
+                                    {% else %}
+                                        {{ grievance.updatedAt.strftime('%Y-%m-%d %H:%M') }}
+                                    {% endif %}
                                 {% else %}
                                     N/A
                                 {% endif %}
@@ -122,7 +130,11 @@
                                 <p><strong>Role:</strong> {{ student.role|title }}</p>
                                 <p><strong>Account Created:</strong> 
                                     {% if student.createdAt %}
-                                        {{ student.createdAt.strftime('%Y-%m-%d') if student.createdAt is not string else student.createdAt }}
+                                        {% if student.createdAt is string %}
+                                            {{ student.createdAt }}
+                                        {% else %}
+                                            {{ student.createdAt.strftime('%Y-%m-%d') }}
+                                        {% endif %}
                                     {% else %}
                                         N/A
                                     {% endif %}
@@ -144,7 +156,7 @@
                 </div>
                 <div class="card-body">
                     <div class="timeline">
-                        {% if grievance.statusHistory %}
+                        {% if grievance.statusHistory and grievance.statusHistory|length > 0 %}
                             {% for status_entry in grievance.statusHistory|sort(attribute='timestamp', reverse=true) %}
                                 <div class="timeline-item">
                                     <div class="timeline-badge">
@@ -155,7 +167,11 @@
                                             <span class="fw-bold">Status: <span class="text-primary">{{ status_entry.status|replace('_', ' ')|title }}</span></span>
                                             <span class="timeline-date">
                                                 {% if status_entry.timestamp %}
-                                                    {{ status_entry.timestamp.strftime('%Y-%m-%d %H:%M') if status_entry.timestamp is not string else status_entry.timestamp }}
+                                                    {% if status_entry.timestamp is string %}
+                                                        {{ status_entry.timestamp }}
+                                                    {% else %}
+                                                        {{ status_entry.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                                    {% endif %}
                                                 {% else %}
                                                     N/A
                                                 {% endif %}
@@ -214,7 +230,7 @@
                 </a>
                 
                 <div>
-                    <a href="{{ url_for('admin.department_grievances', department=grievance.department) }}" class="btn btn-outline-primary me-2">
+                    <a href="{{ url_for('admin.view_department_grievances', department=grievance.department) }}" class="btn btn-outline-primary me-2">
                         <i class="fas fa-list me-1"></i> View Department Grievances
                     </a>
                 </div>

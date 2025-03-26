@@ -10,6 +10,7 @@ from app.models.firebase_utils import (
 from app.models.email_utils import send_grievance_status_update
 import firebase_admin
 from firebase_admin import firestore
+from google.cloud.firestore import SERVER_TIMESTAMP
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -148,8 +149,8 @@ def reports():
         # Count by month (if createdAt is available)
         if 'createdAt' in grievance and grievance['createdAt']:
             created_at = grievance['createdAt']
-            if isinstance(created_at, firestore.SERVER_TIMESTAMP):
-                # Handle server timestamp
+            # Check if it's None or a placeholder for server timestamp
+            if created_at is None or created_at == SERVER_TIMESTAMP:
                 continue
                 
             # Format: YYYY-MM
