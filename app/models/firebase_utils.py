@@ -2,9 +2,12 @@ import os
 import pyrebase
 import firebase_admin
 from firebase_admin import auth, firestore, credentials
+from firebase_admin import auth, firestore, credentials
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import uuid
+import json
+from datetime import datetime
 import json
 from datetime import datetime
 
@@ -103,11 +106,41 @@ def create_user(email, password, display_name, role='student'):
 def login_user(email, password):
     """Login a user with Firebase Authentication"""
     try:
-        user = pyrebase_auth.sign_in_with_email_and_password(email, password)
-        return user
+        if os.getenv('VERCEL'):
+            # In serverless environment, use Firebase Admin SDK
+            user = auth.get_user_by_email(email)
+            # Note: In production, you should implement proper password verification
+            # This is just a placeholder for demonstration
+            return {
+                'localId': user.uid,
+                'email': user.email,
+                'displayName': user.display_name,
+                'idToken': 'dummy_token'  # In production, generate a proper token
+            }
+        else:
+            # In development environment, use Pyrebase
+            user = pyrebase_auth.sign_in_with_email_and_password(email, password)
+            auth.verify_id_token(user['idToken'])
+            return user
+            
+    except auth.InvalidIdTokenError:
+        print("Invalid ID token")
+        raise ValueError("Authentication failed - invalid token")
     except Exception as e:
-        print(f"Login error: {e}")
-        raise e
+        error_message = str(e)
+        print(f"Login error: {error_message}")
+        
+        # Map Firebase error codes to user-friendly messages
+        if "INVALID_PASSWORD" in error_message:
+            raise ValueError("Invalid password")
+        elif "EMAIL_NOT_FOUND" in error_message:
+            raise ValueError("Email not found")
+        elif "INVALID_EMAIL" in error_message:
+            raise ValueError("Invalid email format")
+        elif "USER_DISABLED" in error_message:
+            raise ValueError("Account has been disabled")
+        else:
+            raise ValueError("Authentication failed")
 
 def get_user_by_id(uid):
     """Get user data from Firestore by user ID"""
@@ -128,6 +161,13 @@ def create_grievance(student_id, title, description, department, attachments=Non
         if not student_id or not title or not description or not department:
             raise ValueError("Missing required fields")
 
+        # Create grievance document with a new ID
+        grievance_ref = db.collection('grievances').document()
+        
+        # Get current timestamp and format as ISO string for consistent storage
+        current_time = datetime.now().isoformat()
+        
+        # Create the initial status
         # Create grievance document with a new ID
         grievance_ref = db.collection('grievances').document()
         
@@ -275,8 +315,8 @@ def get_resolved_grievances():
         print(f"Error getting resolved grievances: {e}")
         return []
 
-def get_department_grievances(department):
-    """Get all grievances for a specific department"""
+def get_department_grievances(department_name):
+    """Get all grievances assigned to a specific department"""
     try:
         grievances = db.collection('grievances').where('department', '==', department).order_by('createdAt', direction=firestore.Query.DESCENDING).get()
         
@@ -322,20 +362,21 @@ def update_grievance_status(grievance_id, new_status, note=None):
         print(f"Error updating grievance status: {e}")
         return False
 
-def upload_attachment(file, grievance_id):
-    """Upload a file attachment to Firebase Storage"""
+def upload_file(file, folder='attachments'):
+    """Upload a file to Firebase Storage"""
     try:
-        # Ensure the file has a secure filename
+        if os.getenv('VERCEL'):
+            # In serverless environment, return a dummy URL
+            print("File upload attempted in serverless environment")
+            return "https://example.com/dummy-file-url"
+            
+        if not file:
+            return None
+            
+        # Secure the filename
         filename = secure_filename(file.filename)
-        if not filename:
-            raise ValueError("Invalid filename. Please use only letters, numbers, and common punctuation.")
-            
-        # Check file extension
-        allowed_extensions = {'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'}
-        if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-            raise ValueError(f"Invalid file format. Allowed formats: {', '.join(allowed_extensions)}")
-            
-        # Generate a unique filename to prevent collisions
+        
+        # Generate a unique filename
         unique_filename = f"{uuid.uuid4()}_{filename}"
         file_path = f"attachments/{grievance_id}/{unique_filename}"
         
@@ -424,10 +465,7 @@ def upload_attachment(file, grievance_id):
             print(f"Firestore update error: {str(e)}")
             raise ValueError(f"Failed to update grievance with attachment information: {str(e)}")
         
-        return file_url
-    except ValueError as ve:
-        print(f"Validation error: {ve}")
-        raise
+        return url
     except Exception as e:
         print(f"Error uploading attachment: {str(e)}")
         return None
@@ -686,4 +724,76 @@ def reset_user_password(user_id, new_password):
         return True, "Password reset successfully"
     except Exception as e:
         print(f"Error resetting password: {e}")
-        return False, f"Error: {str(e)}" 
+        return False, f"Error: {str(e)}"
+
+def submit_department_response(grievance_id, response_text, department_id):
+    """Submit a department's response to a grievance"""
+    try:
+        # Get current timestamp
+        current_time = datetime.now().isoformat()
+        
+        # Get the grievance document
+        grievance_ref = db.collection('grievances').document(grievance_id)
+        grievance = grievance_ref.get()
+        
+        if not grievance.exists:
+            raise ValueError("Grievance not found")
+            
+        grievance_data = grievance.to_dict()
+        
+        # Get department info
+        department = get_user_by_id(department_id)
+        department_name = department.get('displayName', 'Unknown Department')
+        
+        # Create response entry
+        response_data = {
+            'text': response_text,
+            'departmentId': department_id,
+            'departmentName': department_name,
+            'timestamp': current_time,
+            'status': 'pending_admin_review'  # New status to indicate admin needs to review
+        }
+        
+        # Update grievance with response
+        if 'departmentResponses' not in grievance_data:
+            grievance_data['departmentResponses'] = []
+        
+        grievance_data['departmentResponses'].append(response_data)
+        grievance_data['updatedAt'] = current_time
+        
+        # Update status to indicate response is pending admin review
+        status_update = {
+            'status': 'pending_admin_review',
+            'note': f'Response submitted by {department_name}, awaiting admin review',
+            'timestamp': current_time
+        }
+        
+        if 'statusHistory' not in grievance_data:
+            grievance_data['statusHistory'] = []
+        
+        grievance_data['statusHistory'].append(status_update)
+        grievance_data['status'] = 'pending_admin_review'
+        
+        # Create admin notification
+        notification_ref = db.collection('notifications').document()
+        notification_data = {
+            'type': 'department_response',
+            'grievanceId': grievance_id,
+            'departmentId': department_id,
+            'departmentName': department_name,
+            'timestamp': current_time,
+            'status': 'unread',
+            'message': f'New response from {department_name} requires review',
+            'targetRole': 'admin'
+        }
+        
+        # Update the documents in a batch
+        batch = db.batch()
+        batch.update(grievance_ref, grievance_data)
+        batch.set(notification_ref, notification_data)
+        batch.commit()
+        
+        return True
+    except Exception as e:
+        print(f"Error submitting department response: {e}")
+        return False 

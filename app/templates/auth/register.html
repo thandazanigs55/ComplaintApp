@@ -30,32 +30,23 @@
             
             <form method="POST" action="{{ url_for('auth.register') }}">
                 <div class="mb-3">
-                    <label for="full_name" class="form-label required">Full Name</label>
+                    <label for="full_name" class="form-label">Full Name</label>
                     <input type="text" class="form-control" id="full_name" name="full_name" required>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="email" class="form-label required">DUT Email Address</label>
-                    <input type="email" class="form-control" id="email" name="email" placeholder="your.name@dut.ac.za" required>
-                    <div class="form-text">Please use your official DUT email address.</div>
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="password" class="form-label required">Password</label>
+                    <label for="password" class="form-label">Password</label>
                     <input type="password" class="form-control" id="password" name="password" required>
-                    <div class="form-text">Password must be at least 6 characters long.</div>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="confirm_password" class="form-label required">Confirm Password</label>
+                    <label for="confirm_password" class="form-label">Confirm Password</label>
                     <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                </div>
-                
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
-                    <label class="form-check-label" for="terms">
-                        I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
-                    </label>
                 </div>
                 
                 <div class="d-grid gap-2 mt-4">
@@ -65,43 +56,6 @@
             
             <div class="text-center mt-4">
                 <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Terms and Conditions Modal -->
-<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h5>DUT Student Grievance Management System Terms of Use</h5>
-                <p>By using the DUT Student Grievance Management System, you agree to the following terms:</p>
-                
-                <h6>1. Account Registration</h6>
-                <p>You must provide accurate and complete information when registering for an account. You are responsible for maintaining the confidentiality of your account credentials.</p>
-                
-                <h6>2. Appropriate Use</h6>
-                <p>You agree to use the system for legitimate grievances related to your experience at DUT. Misuse of the system, including false complaints or harassment, may result in disciplinary action.</p>
-                
-                <h6>3. Privacy and Confidentiality</h6>
-                <p>Information submitted through the system will be treated confidentially but may be shared with relevant DUT staff members as necessary to address your grievance.</p>
-                
-                <h6>4. Communication</h6>
-                <p>By using this system, you consent to receive email notifications regarding your grievances.</p>
-                
-                <h6>5. Attachments and Content</h6>
-                <p>You agree not to upload any illegal, harmful, or inappropriate content. DUT reserves the right to remove any content that violates these terms.</p>
-                
-                <h6>6. System Availability</h6>
-                <p>DUT will make reasonable efforts to maintain system availability but does not guarantee uninterrupted access.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
             </div>
         </div>
     </div>

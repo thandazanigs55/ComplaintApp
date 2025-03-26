@@ -19,6 +19,8 @@ def login_required(role=None):
                     return redirect(url_for('student.dashboard'))
                 elif session.get('user_data', {}).get('role') == 'admin':
                     return redirect(url_for('admin.dashboard'))
+                elif session.get('user_data', {}).get('role') == 'department':
+                    return redirect(url_for('department.dashboard'))
                 else:
                     return redirect(url_for('auth.login'))
             
@@ -32,6 +34,16 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         
+        # Basic validation
+        if not email or not password:
+            flash('Please enter both email and password.', 'danger')
+            return render_template('auth/login.html')
+            
+        # Validate DUT email
+        if not email.endswith('@dut4life.ac.za') and not email.endswith('@dut.ac.za'):
+            flash('Please use your DUT email address to login.', 'danger')
+            return render_template('auth/login.html')
+        
         try:
             # Authenticate user with Firebase
             user = login_user(email, password)
@@ -41,23 +53,37 @@ def login():
             user_data = get_user_by_id(user_id)
             
             if not user_data:
-                flash('User data not found. Please contact support.', 'danger')
-                return redirect(url_for('auth.login'))
+                flash('Account exists but user data not found. Please contact IT Helpdesk.', 'danger')
+                return render_template('auth/login.html')
             
             # Store user info in session
             session['user'] = user_id
             session['user_data'] = user_data
             session['email'] = email
-            
-            flash('Login successful!', 'success')
+            session['role'] = user_data.get('role', '')
             
             # Redirect based on user role
             if user_data.get('role') == 'admin':
+                flash('Welcome back, Administrator!', 'success')
                 return redirect(url_for('admin.dashboard'))
             elif user_data.get('role') == 'student':
+                flash(f'Welcome back, {user_data.get("displayName", "Student")}!', 'success')
                 return redirect(url_for('student.dashboard'))
+            elif user_data.get('role') == 'department':
+                flash(f'Welcome back, {user_data.get("displayName", "Department")} Team!', 'success')
+                return redirect(url_for('department.dashboard'))
             else:
-                return redirect(url_for('auth.login'))
+                flash('Invalid user role. Please contact IT Helpdesk.', 'danger')
+                session.clear()
+                return render_template('auth/login.html')
+            
+        except ValueError as e:
+            error_msg = str(e)
+            print(f"Login error: {error_msg}")
+            
+            # Use the specific error message from Firebase utils
+            flash(error_msg, 'danger')
+            return render_template('auth/login.html')
             
         except Exception as e:
             error_msg = str(e)
