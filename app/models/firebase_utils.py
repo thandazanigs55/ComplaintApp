@@ -19,9 +19,9 @@ def initialize_firebase():
     except ValueError:
         # If no app exists, initialize with credentials
         try:
-            # Load service account
-            service_account_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'service_account.json')
-            cred = credentials.Certificate(service_account_path)
+            # Load service account from environment variable
+            service_account = os.getenv('SERVICE_ACCOUNT')
+            cred = credentials.Certificate(json.loads(service_account))
             return firebase_admin.initialize_app(cred)
         except Exception as e:
             print(f"Error initializing Firebase: {e}")

@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Flask
 from dotenv import load_dotenv
 import firebase_admin
@@ -13,7 +14,8 @@ def create_app():
     app.config['SECRET_KEY'] = os.urandom(24)
     
     # Initialize Firebase Admin SDK
-    cred = credentials.Certificate("service_account.json")
+    service_account = os.getenv('SERVICE_ACCOUNT')
+    cred = credentials.Certificate(json.loads(service_account))
     firebase_admin.initialize_app(cred)
     
     # Add context processor for datetime
