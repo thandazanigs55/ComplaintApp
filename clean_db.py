@@ -13,11 +13,17 @@ Usage: python clean_db.py
 
 import os
 import sys
+import json
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, storage
 from dotenv import load_dotenv
 import argparse
 import pyrebase
+
+
+service_account = os.getenv('SERVICE_ACCOUNT')
+service_account_dict = json.loads(service_account)
+cred = credentials.Certificate(service_account_dict)
 
 # Load environment variables
 load_dotenv()
@@ -57,8 +63,6 @@ def initialize_firebase():
         try:
             return firebase_admin.get_app()
         except ValueError:
-            # If no app exists, initialize with credentials
-            cred = credentials.Certificate("service_account.json")
             return firebase_admin.initialize_app(cred, {
                 'storageBucket': 'studentgrievancems.appspot.com'
             })
@@ -77,7 +81,7 @@ def initialize_pyrebase():
             "messagingSenderId": os.getenv("MESSAGING_SENDER_ID", ""),
             "appId": os.getenv("APP_ID", ""),
             "databaseURL": "https://studentgrievancems-default-rtdb.firebaseio.com",
-            "serviceAccount": "service_account.json"
+            "serviceAccount": service_account_dict
         }
         firebase = pyrebase.initialize_app(config)
         return firebase.storage()

@@ -11,6 +11,10 @@ from datetime import datetime
 # Load environment variables
 load_dotenv()
 
+service_account = os.getenv('SERVICE_ACCOUNT')
+service_account_dict = json.loads(service_account)
+cred = credentials.Certificate(service_account_dict)
+
 def initialize_firebase():
     """Initialize Firebase Admin SDK and Firestore"""
     try:
@@ -36,7 +40,7 @@ firebase_config = {
     "messagingSenderId": os.getenv("MESSAGING_SENDER_ID", ""),
     "appId": os.getenv("APP_ID", ""),
     "databaseURL": "https://studentgrievancems-default-rtdb.firebaseio.com",
-    "serviceAccount": "service_account.json"
+    "serviceAccount": service_account_dict
 }
 
 # Define a dummy storage class for development/testing
