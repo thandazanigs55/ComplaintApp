@@ -9,14 +9,12 @@
     </div>
     <div class="card auth-card">
         <div class="card-body p-4">
-            <h2 class="auth-form-title text-center">Login to Grievance Portal</h2>
-            <p class="text-center text-muted mb-4">For Students, Departments, and Administrators</p>
+            <h2 class="auth-form-title text-center">Login to Student Grievance Portal</h2>
             
             <form method="POST" action="{{ url_for('auth.login') }}">
                 <div class="mb-3">
                     <label for="email" class="form-label required">Email Address</label>
-                    <input type="email" class="form-control" id="email" name="email" required 
-                           placeholder="Enter your DUT email address">
+                    <input type="email" class="form-control" id="email" name="email" required>
                 </div>
                 
                 <div class="mb-3">
@@ -30,7 +28,7 @@
             </form>
             
             <div class="text-center mt-4">
-                <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register as Student</a></p>
+                <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register</a></p>
             </div>
         </div>
     </div>
@@ -39,13 +37,7 @@
         <div class="card-body p-3">
             <div class="d-flex align-items-center">
                 <i class="fas fa-info-circle text-primary me-3" style="font-size: 24px;"></i>
-                <div>
-                    <p class="mb-2">For assistance, please contact the IT Helpdesk:</p>
-                    <ul class="list-unstyled mb-0">
-                        <li><i class="fas fa-envelope me-2"></i><a href="mailto:helpdesk@dut.ac.za">helpdesk@dut.ac.za</a></li>
-                        <li><i class="fas fa-phone me-2"></i><a href="tel:+27313732000">+27 (0)31 373 2000</a></li>
-                    </ul>
-                </div>
+                <p class="mb-0">For assistance, please contact the IT Helpdesk at <a href="mailto:helpdesk@dut.ac.za">helpdesk@dut.ac.za</a> or call <a href="tel:+27313732000">+27 (0)31 373 2000</a>.</p>
             </div>
         </div>
     </div>

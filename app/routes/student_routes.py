@@ -50,7 +50,6 @@ def handle_file_upload(file, grievance_id):
         file_url = upload_attachment(file, grievance_id)
         if file_url:
             print(f"Upload successful, URL: {file_url}")
-            print(f"Upload successful, URL: {file_url}")
             return True, f'Successfully uploaded {file.filename}', 'success', file_url
         
         print("Upload failed: upload_attachment returned None")
@@ -59,13 +58,7 @@ def handle_file_upload(file, grievance_id):
         error_message = str(ve)
         print(f"Validation error during upload: {error_message}")
         return False, f'Validation error: {error_message}', 'warning', None
-        error_message = str(ve)
-        print(f"Validation error during upload: {error_message}")
-        return False, f'Validation error: {error_message}', 'warning', None
     except Exception as e:
-        error_message = str(e)
-        print(f"Unexpected error during upload: {error_message}")
-        return False, f'An error occurred while uploading the file: {error_message}', 'danger', None
         error_message = str(e)
         print(f"Unexpected error during upload: {error_message}")
         return False, f'An error occurred while uploading the file: {error_message}', 'danger', None

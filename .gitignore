@@ -44,8 +44,3 @@ instance/
 # Database
 *.db
 *.sqlite3
-
-# Sensitive files
-service_account.json
-*.key
-credentials.json 
