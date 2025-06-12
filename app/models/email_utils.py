@@ -81,9 +81,12 @@ def send_grievance_status_update(email, grievance_id, new_status, title):
     """
     return send_email(email, subject, message)
 
-def send_new_grievance_notification(email, grievance_id, title):
+def send_new_grievance_notification(email, grievance_id, title=None):
     """Send email notification about a new grievance submission"""
-    subject = f"Grievance Submitted Successfully - {title}"
+    if title:
+        subject = f"Grievance Submitted Successfully - {title}"
+    else:
+        subject = "Grievance Submitted Successfully"
     message = f"""
     <html>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -95,7 +98,7 @@ def send_new_grievance_notification(email, grievance_id, title):
             <p>Dear Student,</p>
             <p>Your grievance has been submitted successfully.</p>
             <p><strong>Grievance ID:</strong> #{grievance_id}<br>
-            <strong>Title:</strong> {title}<br>
+            {f'<strong>Title:</strong> {title}<br>' if title else ''}
             <strong>Status:</strong> Pending</p>
             <p>Your grievance will be reviewed by the administration shortly. You will receive notifications as its status changes.</p>
             <div style="margin-top: 30px; text-align: center;">

@@ -1,6 +1,6 @@
 {% extends 'shared/layout.html' %}
 
-{% block title %}{{ department }} Grievances | DUT Student Grievance Management System{% endblock %}
+{% block title %}{{ department }} Enquiries | DUT Student Enquiry Management System{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,32 +9,32 @@
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ department }} Grievances</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ department }} Enquiries</li>
                 </ol>
             </nav>
             
             <div class="d-flex justify-content-between align-items-center">
-                <h1 class="mb-0">{{ department }} Grievances</h1>
+                <h1 class="mb-0">{{ department }} Enquiries</h1>
                 <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
                 </a>
             </div>
-            <p class="lead">Manage and track grievances for the {{ department }} department.</p>
+            <p class="lead">Manage and track enquiries for the {{ department }} department.</p>
         </div>
     </div>
     
-    <!-- Grievances List -->
+    <!-- Enquiries List -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">All {{ department }} Grievances</h5>
+                    <h5 class="mb-0">All {{ department }} Enquiries</h5>
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             Filter by Status
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
-                            <li><a class="dropdown-item" href="#" data-filter="all">All Grievances</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="all">All Enquiries</a></li>
                             {% for status_key, status_label in status_options.items() %}
                                 <li><a class="dropdown-item" href="#" data-filter="{{ status_key }}">{{ status_label }}</a></li>
                             {% endfor %}
@@ -59,9 +59,9 @@
                                 </thead>
                                 <tbody>
                                     {% for grievance in grievances %}
-                                        <tr class="grievance-item" data-status="{{ grievance.status }}">
-                                            <td>#{{ grievance.id[:8] }}</td>
-                                            <td class="grievance-title">{{ grievance.title }}</td>
+                                        <tr class="enquiry-item" data-status="{{ grievance.status }}">
+                                            <td>#{{ grievance.id }}</td>
+                                            <td class="enquiry-title">{{ grievance.title }}</td>
                                             <td>
                                                 <span class="status-badge status-{{ grievance.status }}">
                                                     {{ grievance.status|replace('_', ' ')|title }}
@@ -74,14 +74,14 @@
                                                     <span class="text-muted">Unknown</span>
                                                 {% endif %}
                                             </td>
-                                            <td class="grievance-meta">
+                                            <td class="enquiry-meta">
                                                 {% if grievance.createdAt %}
                                                     {{ grievance.createdAt.strftime('%Y-%m-%d %H:%M') if grievance.createdAt is not string else grievance.createdAt }}
                                                 {% else %}
                                                     N/A
                                                 {% endif %}
                                             </td>
-                                            <td class="grievance-meta">
+                                            <td class="enquiry-meta">
                                                 {% if grievance.updatedAt %}
                                                     {{ grievance.updatedAt.strftime('%Y-%m-%d %H:%M') if grievance.updatedAt is not string else grievance.updatedAt }}
                                                 {% else %}
@@ -100,8 +100,8 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <h5 class="text-muted">No Grievances Found</h5>
-                            <p class="text-muted">There are currently no grievances for the {{ department }} department.</p>
+                            <h5 class="text-muted">No Enquiries Found</h5>
+                            <p class="text-muted">There are currently no enquiries for the {{ department }} department.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -114,9 +114,9 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Filter grievances by status
+        // Filter enquiries by status
         const filterLinks = document.querySelectorAll('[data-filter]');
-        const grievanceItems = document.querySelectorAll('.grievance-item');
+        const enquiryItems = document.querySelectorAll('.enquiry-item');
         
         filterLinks.forEach(link => {
             link.addEventListener('click', function(e) {
@@ -129,7 +129,7 @@
                 document.getElementById('filterDropdown').textContent = filterLabel;
                 
                 // Apply filter
-                grievanceItems.forEach(item => {
+                enquiryItems.forEach(item => {
                     if (filter === 'all' || item.dataset.status === filter) {
                         item.style.display = '';
                     } else {

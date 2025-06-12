@@ -1,6 +1,6 @@
 {% extends 'shared/layout.html' %}
 
-{% block title %}Submit New Grievance | DUT Student Grievance Management System{% endblock %}
+{% block title %}Submit New Enquiry | DUT Student Enquiry Management System{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -9,49 +9,66 @@
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Submit New Grievance</li>
+                    <li class="breadcrumb-item active" aria-current="page">Submit New Enquiry</li>
                 </ol>
             </nav>
             
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title mb-0">Submit New Grievance</h2>
+                    <h2 class="card-title mb-0">Submit New Enquiry</h2>
                 </div>
                 <div class="card-body">
                     <p class="text-muted mb-4">
-                        Please provide detailed information about your grievance. The more details you provide, the better we can assist you.
+                        Please provide detailed information about your enquiry. The more details you provide, the better we can assist you.
                     </p>
                     
                     <form method="POST" action="{{ url_for('student.new_grievance') }}" enctype="multipart/form-data" id="grievanceForm" novalidate>
                         <div class="mb-3">
-                            <label for="title" class="form-label required">Grievance Title</label>
-                            <input type="text" class="form-control" id="title" name="title" 
-                                   value="{{ form_data.title }}" 
-                                   minlength="5" maxlength="200" required 
-                                   placeholder="Brief title describing your grievance"
-                                   autocomplete="off">
-                            <div class="form-text d-flex justify-content-between">
-                                <span>Be specific and concise</span>
-                                <span class="title-length">0/200 characters</span>
-                            </div>
+                            <label for="department" class="form-label required">Department</label>
+                            <select class="form-select" id="department" name="department" required>
+                                <option value="" {% if not form_data.department %}selected{% endif %} disabled>Select the department related to your enquiry</option>
+                                {% for department in departments %}
+                                    <option value="{{ department[0] }}" {% if department[0]|string == form_data.department|string %}selected{% endif %}>{{ department[1] }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Choose the department most relevant to your enquiry</div>
                             <div class="invalid-feedback">
-                                Please enter a title between 5 and 200 characters.
+                                Please select a department.
                             </div>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="department" class="form-label required">Department</label>
-                            <select class="form-select" id="department" name="department" required>
-                                <option value="" {% if not form_data.department %}selected{% endif %} disabled>Select the department related to your grievance</option>
-                                {% for department in departments %}
-                                    <option value="{{ department }}" {% if department == form_data.department %}selected{% endif %}>
-                                        {{ department }}
-                                    </option>
-                                {% endfor %}
+                            <label for="query_category" class="form-label required">Query Category</label>
+                            <select class="form-select" id="query_category" name="query_category" required>
+                                <option value="" {% if not form_data.query_category %}selected{% endif %} disabled>Select a category</option>
+                                <option value="Module/Subject Queries" {% if form_data.query_category == 'Module/Subject Queries' %}selected{% endif %}>Module/Subject Queries</option>
+                                <option value="Assessment & Exam-Related" {% if form_data.query_category == 'Assessment & Exam-Related' %}selected{% endif %}>Assessment & Exam-Related</option>
+                                <option value="Academic Records" {% if form_data.query_category == 'Academic Records' %}selected{% endif %}>Academic Records</option>
+                                <option value="Administrative Support" {% if form_data.query_category == 'Administrative Support' %}selected{% endif %}>Administrative Support</option>
+                                <option value="Technical or System Access" {% if form_data.query_category == 'Technical or System Access' %}selected{% endif %}>Technical or System Access</option>
+                                <option value="Advising & Support" {% if form_data.query_category == 'Advising & Support' %}selected{% endif %}>Advising & Support</option>
+                                <option value="Other" {% if form_data.query_category == 'Other' %}selected{% endif %}>Other</option>
                             </select>
-                            <div class="form-text">Choose the department most relevant to your grievance</div>
                             <div class="invalid-feedback">
-                                Please select a department.
+                                Please select a query category.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="programme" class="form-label required">Select the Programme you are currently registered for / want to register for</label>
+                            <select class="form-select" id="programme" name="programme" required>
+                                <option value="" {% if not form_data.programme %}selected{% endif %} disabled>Select a programme</option>
+                                <option value="Diploma in Internal Auditing" {% if form_data.programme == 'Diploma in Internal Auditing' %}selected{% endif %}>Diploma in Internal Auditing</option>
+                                <option value="Diploma in Taxation" {% if form_data.programme == 'Diploma in Taxation' %}selected{% endif %}>Diploma in Taxation</option>
+                                <option value="Advanced diploma in Internal Auditing" {% if form_data.programme == 'Advanced diploma in Internal Auditing' %}selected{% endif %}>Advanced diploma in Internal Auditing</option>
+                                <option value="Advanced diploma in Taxation" {% if form_data.programme == 'Advanced diploma in Taxation' %}selected{% endif %}>Advanced diploma in Taxation</option>
+                                <option value="Postgraduate diploma in Internal Auditing" {% if form_data.programme == 'Postgraduate diploma in Internal Auditing' %}selected{% endif %}>Postgraduate diploma in Internal Auditing</option>
+                                <option value="Postgraduate diploma in Taxation" {% if form_data.programme == 'Postgraduate diploma in Taxation' %}selected{% endif %}>Postgraduate diploma in Taxation</option>
+                                <option value="Masters" {% if form_data.programme == 'Masters' %}selected{% endif %}>Masters</option>
+                                <option value="PhD" {% if form_data.programme == 'PhD' %}selected{% endif %}>PhD</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a programme.
                             </div>
                         </div>
                         
@@ -59,7 +76,7 @@
                             <label for="description" class="form-label required">Detailed Description</label>
                             <textarea class="form-control" id="description" name="description" 
                                       rows="6" required minlength="20" maxlength="3000"
-                                      placeholder="Provide a detailed description of your grievance, including what happened, when it happened, and how it affects you.">{{ form_data.description }}</textarea>
+                                      placeholder="Provide a detailed description of your enquiry, including what happened, when it happened, and how it affects you.">{{ form_data.description }}</textarea>
                             <div class="form-text d-flex justify-content-between">
                                 <span>Include all relevant details</span>
                                 <span class="description-length">0/3000 characters</span>
@@ -86,7 +103,7 @@
                         <div class="alert alert-info d-flex align-items-center" role="alert">
                             <i class="fas fa-info-circle me-3 fs-4"></i>
                             <div>
-                                <strong>Important:</strong> Submitting a grievance will notify the administration. You'll receive email updates as your grievance is processed.
+                                <strong>Important:</strong> Submitting an enquiry will notify the administration. You'll receive email updates as your enquiry is processed.
                             </div>
                         </div>
                         
@@ -94,7 +111,7 @@
                             <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
                             <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                Submit Grievance
+                                Submit Enquiry
                             </button>
                         </div>
                     </form>
@@ -103,13 +120,13 @@
             
             <div class="card mt-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Tips for Submitting an Effective Grievance</h5>
+                    <h5 class="mb-0">Tips for Submitting an Effective Enquiry</h5>
                 </div>
                 <div class="card-body">
                     <ul class="mb-0">
                         <li><strong>Be specific:</strong> Include exact dates, times, and locations.</li>
                         <li><strong>Be factual:</strong> Stick to facts and avoid overly emotional language.</li>
-                        <li><strong>Be solution-oriented:</strong> If possible, suggest how your grievance might be resolved.</li>
+                        <li><strong>Be solution-oriented:</strong> If possible, suggest how your enquiry might be resolved.</li>
                         <li><strong>Attach evidence:</strong> Include any relevant documents or communications.</li>
                         <li><strong>Be respectful:</strong> Maintain a respectful tone throughout your description.</li>
                     </ul>
@@ -124,24 +141,12 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('grievanceForm');
-        const titleField = document.getElementById('title');
         const descriptionField = document.getElementById('description');
         const attachmentsField = document.getElementById('attachments');
         const departmentField = document.getElementById('department');
         const submitBtn = document.getElementById('submitBtn');
         const filePreview = document.getElementById('filePreview');
         const maxFileSize = 5 * 1024 * 1024; // 5MB
-        
-        // Update character counter for title
-        function updateTitleCounter() {
-            const length = titleField.value.length;
-            const counter = document.querySelector('.title-length');
-            const isValid = length >= 5 && length <= 200;
-            
-            counter.textContent = `${length}/200 characters`;
-            counter.classList.toggle('text-danger', !isValid);
-            titleField.classList.toggle('is-invalid', !isValid);
-        }
         
         // Update character counter for description
         function updateDescriptionCounter() {
@@ -238,7 +243,6 @@
         }
         
         // Event listeners
-        titleField.addEventListener('input', updateTitleCounter);
         descriptionField.addEventListener('input', updateDescriptionCounter);
         attachmentsField.addEventListener('change', (e) => handleFileSelect(e.target.files));
         departmentField.addEventListener('change', () => {
@@ -252,12 +256,6 @@
             
             // Reset validation
             form.classList.add('was-validated');
-            
-            // Validate title
-            if (titleField.value.length < 5 || titleField.value.length > 200) {
-                titleField.classList.add('is-invalid');
-                isValid = false;
-            }
             
             // Validate department
             if (!departmentField.value) {
@@ -286,7 +284,6 @@
         });
         
         // Initialize counters
-        updateTitleCounter();
         updateDescriptionCounter();
     });
 </script>

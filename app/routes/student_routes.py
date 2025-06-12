@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app
-from app.routes.auth_routes import login_required
-from app.models.firebase_utils import (
+from flask_login import current_user, login_required
+from app.routes.auth_routes import role_required
+from app.models.db_utils import (
     create_grievance, get_student_grievances, get_grievance_by_id, 
-    upload_attachment, get_all_departments
+    get_all_departments, create_department
 )
 from app.models.email_utils import send_new_grievance_notification
 from werkzeug.utils import secure_filename
@@ -47,13 +48,31 @@ def handle_file_upload(file, grievance_id):
         print(f"File details - Name: {file.filename}, Size: {len(file.read())} bytes")
         file.seek(0)  # Reset file pointer after reading
         
-        file_url = upload_attachment(file, grievance_id)
-        if file_url:
-            print(f"Upload successful, URL: {file_url}")
-            return True, f'Successfully uploaded {file.filename}', 'success', file_url
+        # Create directory if it doesn't exist
+        upload_folder = os.path.join(current_app.root_path, 'uploads', str(grievance_id))
+        os.makedirs(upload_folder, exist_ok=True)
         
-        print("Upload failed: upload_attachment returned None")
-        return False, 'Failed to upload attachment. Please try again.', 'danger', None
+        # Save the file locally
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(upload_folder, filename)
+        file.save(file_path)
+        
+        # Create attachment record in database
+        from app.models.models import db, Attachment
+        attachment = Attachment(
+            filename=filename,
+            file_path=file_path,
+            grievance_id=grievance_id
+        )
+        db.session.add(attachment)
+        db.session.commit()
+        
+        # Return the local file path
+        relative_path = os.path.join('uploads', str(grievance_id), filename)
+        file_url = url_for('static', filename=relative_path, _external=True)
+        
+        print(f"Upload successful, URL: {file_url}")
+        return True, f'Successfully uploaded {file.filename}', 'success', file_url
     except ValueError as ve:
         error_message = str(ve)
         print(f"Validation error during upload: {error_message}")
@@ -64,9 +83,10 @@ def handle_file_upload(file, grievance_id):
         return False, f'An error occurred while uploading the file: {error_message}', 'danger', None
 
 @student_bp.route('/dashboard')
-@login_required(role='student')
+@login_required
+@role_required('student')
 def dashboard():
-    user_id = session.get('user')
+    user_id = current_user.id
     grievances = get_student_grievances(user_id)
     
     # Count grievances by status
@@ -78,7 +98,7 @@ def dashboard():
     }
     
     for grievance in grievances:
-        status = grievance.get('status', 'pending')
+        status = grievance.status
         if status in status_counts:
             status_counts[status] += 1
         else:
@@ -89,34 +109,31 @@ def dashboard():
                            status_counts=status_counts)
 
 @student_bp.route('/new-grievance', methods=['GET', 'POST'])
-@login_required(role='student')
+@login_required
+@role_required('student')
 def new_grievance():
     # Get departments for the form
     departments_data = get_all_departments()
-    departments = [dept['name'] for dept in departments_data] if departments_data else DEFAULT_DEPARTMENTS
+    
+    # Create default departments if none exist
+    if not departments_data:
+        for dept_name in DEFAULT_DEPARTMENTS:
+            create_department(dept_name, '')
+        departments_data = get_all_departments()
+    
+    departments = [(dept.id, dept.name) for dept in departments_data]
     
     if request.method == 'POST':
         # Get form data
-        title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
-        department = request.form.get('department', '').strip()
+        department_id = request.form.get('department', '')
+        query_category = request.form.get('query_category', '')
         
-        # Get user info from session
-        user_id = session.get('user')
-        if not user_id:
-            flash('Your session has expired. Please log in again.', 'danger')
-            return redirect(url_for('auth.login'))
+        # Get user info from current_user
+        user_id = current_user.id
         
         errors = []
         
-        # Validate title
-        if not title:
-            errors.append('Title is required.')
-        elif len(title) < 5:
-            errors.append('Title must be at least 5 characters long.')
-        elif len(title) > 200:
-            errors.append('Title must not exceed 200 characters.')
-            
         # Validate description
         if not description:
             errors.append('Description is required.')
@@ -124,12 +141,25 @@ def new_grievance():
             errors.append('Description must be at least 20 characters long.')
         elif len(description) > 3000:
             errors.append('Description must not exceed 3000 characters.')
-            
+        
         # Validate department
-        if not department:
+        if not department_id:
             errors.append('Department is required.')
-        elif department not in departments:
-            errors.append('Please select a valid department.')
+        
+        # Validate query category
+        if not query_category:
+            errors.append('Query category is required.')
+        
+        # Ensure department_id is an integer and valid
+        from app.models.models import Department
+        try:
+            department_id = int(department_id)
+        except (ValueError, TypeError):
+            errors.append('Invalid department selected.')
+            department_id = None
+        department = Department.query.get(department_id) if department_id else None
+        if not department:
+            errors.append('Invalid department selected.')
         
         # If there are validation errors, show them and return to form
         if errors:
@@ -138,14 +168,14 @@ def new_grievance():
             return render_template('student/new_grievance.html', 
                                 departments=departments,
                                 form_data={
-                                    'title': title,
                                     'description': description,
-                                    'department': department
+                                    'department': department_id or '',
+                                    'query_category': query_category
                                 })
         
         try:
             # Create grievance record first
-            grievance_id = create_grievance(user_id, title, description, department)
+            grievance_id = create_grievance(user_id, None, description, department_id, query_category)
             if not grievance_id:
                 raise ValueError("Failed to create grievance record")
             
@@ -185,10 +215,10 @@ def new_grievance():
                     flash(f'Failed to upload {filename}: {error}', 'warning')
             
             # Send email notification
-            user_email = session.get('email')
+            user_email = current_user.email
             if user_email:
                 try:
-                    send_new_grievance_notification(user_email, grievance_id, title)
+                    send_new_grievance_notification(user_email, grievance_id)
                 except Exception as e:
                     print(f"Error sending email notification: {str(e)}")
                     # Don't show this error to the user as it's not critical
@@ -212,55 +242,56 @@ def new_grievance():
         return render_template('student/new_grievance.html', 
                             departments=departments,
                             form_data={
-                                'title': title,
                                 'description': description,
-                                'department': department
+                                'department': department_id or '',
+                                'query_category': query_category
                             })
     
     # GET request - show empty form
     return render_template('student/new_grievance.html', 
                          departments=departments,
                          form_data={
-                             'title': '',
                              'description': '',
-                             'department': ''
+                             'department': '',
+                             'query_category': ''
                          })
 
 @student_bp.route('/grievance/<grievance_id>')
-@login_required(role='student')
+@login_required
+@role_required('student')
 def grievance_detail(grievance_id):
-    user_id = session.get('user')
+    user_id = current_user.id
     grievance = get_grievance_by_id(grievance_id)
     
     # Check if grievance exists and belongs to current user
-    if not grievance or grievance.get('studentId') != user_id:
+    if not grievance or grievance.student_id != user_id:
         flash('Grievance not found.', 'danger')
         return redirect(url_for('student.dashboard'))
     
     return render_template('student/grievance_detail.html', grievance=grievance)
 
 @student_bp.route('/add-attachment/<grievance_id>', methods=['POST'])
-@login_required(role='student')
+@login_required
+@role_required('student')
 def add_attachment(grievance_id):
-    user_id = session.get('user')
+    user_id = current_user.id
     grievance = get_grievance_by_id(grievance_id)
     
     # Check if grievance exists and belongs to current user
-    if not grievance or grievance.get('studentId') != user_id:
+    if not grievance or grievance.student_id != user_id:
         flash('Grievance not found.', 'danger')
         return redirect(url_for('student.dashboard'))
     
-    # Check if grievance is closed
-    if grievance.get('status') == 'closed':
-        flash('Cannot add attachments to a closed grievance.', 'warning')
+    if 'file' not in request.files:
+        flash('No file selected.', 'warning')
         return redirect(url_for('student.grievance_detail', grievance_id=grievance_id))
     
-    # Handle file upload
-    if 'attachment' not in request.files:
-        flash('No file part in the request.', 'danger')
+    file = request.files['file']
+    
+    if not file or not file.filename:
+        flash('No file selected.', 'warning')
         return redirect(url_for('student.grievance_detail', grievance_id=grievance_id))
     
-    file = request.files['attachment']
     success, message, category, file_url = handle_file_upload(file, grievance_id)
     flash(message, category)
     

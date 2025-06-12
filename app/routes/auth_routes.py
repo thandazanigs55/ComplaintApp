@@ -1,75 +1,65 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, session
-from app.models.firebase_utils import create_user, login_user, get_user_by_id
-import functools
+from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask_login import login_user, logout_user, login_required, current_user
+from functools import wraps
+from app.models.db_utils import create_user, get_user_by_email, update_user
+from app.models.models import User
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-# Decorator for requiring authentication
-def login_required(role=None):
-    def decorator(view):
-        @functools.wraps(view)
-        def wrapped_view(*args, **kwargs):
-            if 'user' not in session:
-                return redirect(url_for('auth.login'))
-            
-            # If role is specified, check if the user has the required role
-            if role and session.get('user_data', {}).get('role') != role:
+def role_required(role):
+    """Decorator to restrict access based on user role"""
+    def decorator(f):
+        @wraps(f)
+        @login_required
+        def decorated_function(*args, **kwargs):
+            if not current_user.role == role:
                 flash('You do not have permission to access this page.', 'danger')
-                if session.get('user_data', {}).get('role') == 'student':
+                if current_user.role == 'student':
                     return redirect(url_for('student.dashboard'))
-                elif session.get('user_data', {}).get('role') == 'admin':
+                elif current_user.role == 'admin':
                     return redirect(url_for('admin.dashboard'))
                 else:
                     return redirect(url_for('auth.login'))
-            
-            return view(*args, **kwargs)
-        return wrapped_view
+            return f(*args, **kwargs)
+        return decorated_function
     return decorator
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        else:
+            return redirect(url_for('student.dashboard'))
+            
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         
         try:
-            # Authenticate user with Firebase
-            user = login_user(email, password)
-            user_id = user['localId']
+            user = get_user_by_email(email)
             
-            # Get user data from Firestore
-            user_data = get_user_by_id(user_id)
-            
-            if not user_data:
-                flash('User data not found. Please contact support.', 'danger')
-                return redirect(url_for('auth.login'))
-            
-            # Store user info in session
-            session['user'] = user_id
-            session['user_data'] = user_data
-            session['email'] = email
-            
-            flash('Login successful!', 'success')
-            
-            # Redirect based on user role
-            if user_data.get('role') == 'admin':
-                return redirect(url_for('admin.dashboard'))
-            elif user_data.get('role') == 'student':
-                return redirect(url_for('student.dashboard'))
+            if user and user.check_password(password):
+                login_user(user)
+                flash('Login successful!', 'success')
+                
+                if user.role == 'admin':
+                    return redirect(url_for('admin.dashboard'))
+                else:
+                    return redirect(url_for('student.dashboard'))
             else:
-                return redirect(url_for('auth.login'))
-            
+                flash('Invalid email or password.', 'danger')
+                
         except Exception as e:
-            error_msg = str(e)
-            if 'INVALID_LOGIN_CREDENTIALS' in error_msg:
-                flash('Invalid Login Credentials', 'danger')
-            else:
-                flash('Login failed. Please try again.', 'danger')
+            flash('Login failed. Please try again.', 'danger')
     
     return render_template('auth/login.html')
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+        
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -86,8 +76,13 @@ def register():
             flash('Passwords do not match.', 'danger')
             return redirect(url_for('auth.register'))
         
+        # Check if user already exists
+        if get_user_by_email(email):
+            flash('Email already registered.', 'danger')
+            return redirect(url_for('auth.register'))
+        
         try:
-            # Create user with Firebase Authentication
+            # Create new user
             user_id = create_user(email, password, full_name, role='student')
             
             flash('Registration successful! Please login.', 'success')
@@ -99,14 +94,46 @@ def register():
     return render_template('auth/register.html')
 
 @auth_bp.route('/logout')
+@login_required
 def logout():
-    # Clear session
-    session.clear()
+    logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/profile')
-@login_required()
+@login_required
 def profile():
-    user_data = session.get('user_data', {})
-    return render_template('auth/profile.html', user=user_data) 
+    user = current_user
+    total_grievances = pending_grievances = resolved_grievances = 0
+    if user.role == 'student':
+        from app.models.db_utils import get_student_grievances
+        grievances = get_student_grievances(user.id)
+        total_grievances = len(grievances)
+        pending_grievances = len([g for g in grievances if g.status == 'pending'])
+        resolved_grievances = len([g for g in grievances if g.status in ['resolved', 'closed']])
+    return render_template('auth/profile.html', user=user, total_grievances=total_grievances, pending_grievances=pending_grievances, resolved_grievances=resolved_grievances)
+
+@auth_bp.route('/profile/edit', methods=['POST'])
+@login_required
+def edit_profile():
+    display_name = request.form.get('display_name', '').strip()
+    password = request.form.get('password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not display_name:
+        flash('Name is required.', 'danger')
+        return redirect(url_for('auth.profile'))
+
+    data = {'display_name': display_name}
+    if password:
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return redirect(url_for('auth.profile'))
+        data['password'] = password
+
+    try:
+        update_user(current_user.id, data)
+        flash('Profile updated successfully.', 'success')
+    except Exception as e:
+        flash(f'Error updating profile: {str(e)}', 'danger')
+    return redirect(url_for('auth.profile')) 

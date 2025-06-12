@@ -1,27 +1,50 @@
 import os
-import json
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_login import LoginManager
 from dotenv import load_dotenv
-import firebase_admin
-from firebase_admin import credentials
 import datetime
 
 # Load environment variables
 load_dotenv()
 
+# Import models
+from app.models.models import db, User
+
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = os.urandom(24)
     
-    # Initialize Firebase Admin SDK
-    service_account = os.getenv('SERVICE_ACCOUNT')
-    cred = credentials.Certificate(json.loads(service_account))
-    firebase_admin.initialize_app(cred)
+    # Configure Flask app
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Set up file upload folder
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    
+    # Initialize extensions
+    db.init_app(app)
+    migrate = Migrate(app, db)
+    
+    # Initialize Login Manager
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
     
     # Add context processor for datetime
     @app.context_processor
     def inject_now():
         return {'now': datetime.datetime.now()}
+    
+    # Create database tables
+    with app.app_context():
+        db.create_all()
     
     # Import and register blueprints
     from app.routes.auth_routes import auth_bp

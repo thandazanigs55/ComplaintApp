@@ -1,13 +1,13 @@
 {% extends 'shared/layout.html' %}
 
-{% block title %}Admin Dashboard | DUT Student Grievance Management System{% endblock %}
+{% block title %}Admin Dashboard | DUT Student Enquiry Management System{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
             <h1 class="mb-2">Admin Dashboard</h1>
-            <p class="lead">Manage and track all student grievances across departments.</p>
+            <p class="lead">Manage and track all student enquiries across departments.</p>
         </div>
     </div>
     
@@ -19,7 +19,7 @@
                     <i class="fas fa-file-alt"></i>
                 </div>
                 <div class="stats-value">{{ grievances|length }}</div>
-                <div class="stats-title">Total Grievances</div>
+                <div class="stats-title">Total Enquiries</div>
             </div>
         </div>
         
@@ -59,7 +59,7 @@
         <div class="col-md-6 mb-4 mb-md-0">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0">Grievances by Department</h5>
+                    <h5 class="mb-0">Enquiries by Department</h5>
                 </div>
                 <div class="card-body">
                     {% if department_counts %}
@@ -78,7 +78,7 @@
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0">Grievances by Status</h5>
+                    <h5 class="mb-0">Enquiries by Status</h5>
                 </div>
                 <div class="card-body">
                     {% if status_counts %}
@@ -95,19 +95,19 @@
         </div>
     </div>
     
-    <!-- Recent Grievances -->
+    <!-- Recent Enquiries -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Recent Grievances</h5>
+                    <h5 class="mb-0">Recent Enquiries</h5>
                     <div class="d-flex gap-2">
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 Filter by Status
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
-                                <li><a class="dropdown-item" href="#" data-filter="all">All Grievances</a></li>
+                                <li><a class="dropdown-item" href="#" data-filter="all">All Enquiries</a></li>
                                 {% for status_key, status_label in status_options.items() %}
                                     <li><a class="dropdown-item" href="#" data-filter="{{ status_key }}">{{ status_label }}</a></li>
                                 {% endfor %}
@@ -126,7 +126,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>ID</th>
-                                        <th>Title</th>
+                                        <th>Query Category</th>
                                         <th>Department</th>
                                         <th>Status</th>
                                         <th>Student</th>
@@ -136,17 +136,15 @@
                                 </thead>
                                 <tbody>
                                     {% for grievance in grievances[:10] %}
-                                        <tr class="grievance-item" data-status="{{ grievance.status }}">
-                                            <td>#{{ grievance.id[:8] }}</td>
+                                        <tr class="enquiry-item" data-status="{{ grievance.status }}">
+                                            <td>#{{ grievance.id }}</td>
                                             <td>
-                                                <a href="{{ url_for('admin.grievance_detail', grievance_id=grievance.id) }}" class="text-decoration-none grievance-title">
-                                                    {{ grievance.title }}
+                                                <a href="{{ url_for('admin.grievance_detail', grievance_id=grievance.id) }}" class="text-decoration-none enquiry-title">
+                                                    {{ grievance.query_category }}
                                                 </a>
                                             </td>
                                             <td>
-                                                <a href="{{ url_for('admin.view_department_grievances', department=grievance.department) }}" class="text-decoration-none">
-                                                    {{ grievance.department }}
-                                                </a>
+                                                {{ grievance.department.name if grievance.department else 'Unknown' }}
                                             </td>
                                             <td>
                                                 <div class="dropdown">
@@ -201,7 +199,7 @@
                                                 <div class="modal-content">
                                                     <form action="{{ url_for('admin.update_status', grievance_id=grievance.id) }}" method="POST">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title" id="noteModalLabel{{ grievance.id }}">Add Note to Grievance #{{ grievance.id[:8] }}</h5>
+                                                            <h5 class="modal-title" id="noteModalLabel{{ grievance.id }}">Add Note to Enquiry #{{ grievance.id }}</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                         </div>
                                                         <div class="modal-body">
@@ -225,7 +223,7 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <p class="text-muted mb-0">No grievances found.</p>
+                            <p class="text-muted mb-0">No enquiries found.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -249,9 +247,9 @@
     const statusLabels = JSON.parse('{{ status_options | tojson | safe }}');
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Filter grievances by status
+        // Filter enquiries by status
         const filterLinks = document.querySelectorAll('[data-filter]');
-        const grievanceItems = document.querySelectorAll('.grievance-item');
+        const enquiryItems = document.querySelectorAll('.enquiry-item');
         
         filterLinks.forEach(link => {
             link.addEventListener('click', function(e) {
@@ -260,7 +258,7 @@
                 const filter = this.dataset.filter;
                 
                 // Apply filter
-                grievanceItems.forEach(item => {
+                enquiryItems.forEach(item => {
                     if (filter === 'all' || item.dataset.status === filter) {
                         item.style.display = '';
                     } else {
@@ -291,7 +289,7 @@
                     data: {
                         labels: Object.keys(departmentData),
                         datasets: [{
-                            label: 'Grievances',
+                            label: 'Enquiries',
                             data: Object.values(departmentData),
                             backgroundColor: [
                                 '#004F9F', '#E31837', '#0076C0', '#003366', '#6610F2',

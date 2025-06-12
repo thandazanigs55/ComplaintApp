@@ -262,48 +262,34 @@ a:hover {
 
 .navbar {
     background-color: var(--dut-blue);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-brand {
-    padding: 0.5rem;
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 4px;
-    margin-right: 1.5rem;
     display: flex;
     align-items: center;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(8px);
+    padding: 0;
+    transition: all 0.3s ease;
 }
 
 .navbar-brand:hover {
-    background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
-}
-
-.navbar-brand img {
-    height: 45px;
-    width: auto;
-    margin-right: 0;
-    transition: transform 0.2s ease;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-    image-rendering: -webkit-optimize-contrast;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-}
-
-.navbar-brand:hover img {
     transform: scale(1.05);
 }
 
-.nav-link {
-    color: white !important;
-    font-weight: 500;
+.navbar-brand img {
+    max-height: 40px;
+    border-radius: 5px;
 }
 
-.nav-link:hover {
-    color: rgba(255, 255, 255, 0.8) !important;
+.nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover, .nav-link:focus {
+    color: #fff !important;
+    transform: translateY(-2px);
 }
 
 .btn-primary {
@@ -423,4 +409,41 @@ a:hover {
     .auth-logo img {
         height: 65px;
     }
+}
+
+/* User Dropdown Styles */
+.nav-item.dropdown .dropdown-toggle {
+    display: flex;
+    align-items: center;
+    color: white;
+}
+
+.nav-item.dropdown .dropdown-toggle i {
+    font-size: 18px;
+    margin-right: 5px;
+}
+
+.nav-item.dropdown .dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.nav-item.dropdown .dropdown-item {
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-item.dropdown .dropdown-item i {
+    margin-right: 10px;
+    color: var(--dut-blue);
+}
+
+.nav-item.dropdown .dropdown-item:hover {
+    background-color: rgba(0, 79, 159, 0.05);
+}
+
+.nav-item.dropdown .dropdown-divider {
+    margin: 5px 0;
 } 

@@ -1,6 +1,6 @@
 {% extends 'shared/layout.html' %}
 
-{% block title %}{{ title|default('Grievances') }} | DUT Student Grievance Management System{% endblock %}
+{% block title %}{{ title|default('Enquiries') }} | DUT Student Enquiry Management System{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,37 +9,37 @@
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ title|default('Grievances') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ title|default('Enquiries') }}</li>
                 </ol>
             </nav>
             
             <div class="d-flex justify-content-between align-items-center">
-                <h1 class="mb-0">{{ title|default('Grievances') }}</h1>
+                <h1 class="mb-0">{{ title|default('Enquiries') }}</h1>
                 <div class="btn-group">
                     <a href="{{ url_for('admin.all_grievances') }}" class="btn btn-outline-primary {% if filter_type == 'all' %}active{% endif %}">
-                        All Grievances
+                        All Enquiries
                     </a>
                     <a href="{{ url_for('admin.open_grievances') }}" class="btn btn-outline-primary {% if filter_type == 'status' and filter_value == 'open' %}active{% endif %}">
-                        Open Grievances
+                        Open Enquiries
                     </a>
                     <a href="{{ url_for('admin.resolved_grievances') }}" class="btn btn-outline-primary {% if filter_type == 'status' and filter_value == 'resolved' %}active{% endif %}">
-                        Resolved Grievances
+                        Resolved Enquiries
                     </a>
                 </div>
             </div>
-            <p class="lead">View and manage student grievances in the system.</p>
+            <p class="lead">View and manage student enquiries in the system.</p>
         </div>
     </div>
     
-    <!-- Grievances List -->
+    <!-- Enquiries List -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ title|default('All Grievances') }}</h5>
+                    <h5 class="mb-0">{{ title|default('All Enquiries') }}</h5>
                     <div>
                         <input type="text" id="grievanceSearch" class="form-control form-control-sm" 
-                               placeholder="Search grievances..." style="width: 200px;">
+                               placeholder="Search enquiries..." style="width: 200px;">
                     </div>
                 </div>
                 
@@ -50,7 +50,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>ID</th>
-                                        <th>Title</th>
+                                        <th>Query Category</th>
                                         <th>Department</th>
                                         <th>Status</th>
                                         <th>Student</th>
@@ -61,12 +61,12 @@
                                 </thead>
                                 <tbody>
                                     {% for grievance in grievances %}
-                                        <tr class="grievance-item" data-status="{{ grievance.status }}">
-                                            <td>#{{ grievance.id[:8] }}</td>
-                                            <td>{{ grievance.title }}</td>
+                                        <tr class="enquiry-item" data-status="{{ grievance.status }}">
+                                            <td>#{{ grievance.id }}</td>
+                                            <td>{{ grievance.query_category }}</td>
                                             <td>
-                                                <a href="{{ url_for('admin.view_department_grievances', department=grievance.department) }}" class="text-decoration-none">
-                                                    {{ grievance.department }}
+                                                <a href="{{ url_for('admin.view_department_grievances', dept_id=grievance.department_id) }}" class="text-decoration-none">
+                                                    {{ grievance.department.name if grievance.department else 'Unknown' }}
                                                 </a>
                                             </td>
                                             <td>
@@ -107,8 +107,8 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <h5 class="text-muted">No Grievances Found</h5>
-                            <p class="text-muted">There are currently no grievances matching the selected filter.</p>
+                            <h5 class="text-muted">No Enquiries Found</h5>
+                            <p class="text-muted">There are currently no enquiries matching the selected filter.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -121,7 +121,7 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Setup grievance search functionality
+        // Setup enquiry search functionality
         const searchInput = document.getElementById('grievanceSearch');
         const grievanceTable = document.getElementById('grievancesTable');
         const grievanceRows = grievanceTable?.querySelectorAll('tbody tr');

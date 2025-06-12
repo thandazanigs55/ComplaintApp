@@ -1,6 +1,6 @@
 {% extends 'shared/layout.html' %}
 
-{% block title %}Grievance Details | DUT Student Grievance Management System{% endblock %}
+{% block title %}Enquiry Details | DUT Student Enquiry Management System{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -9,11 +9,11 @@
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Grievance #{{ grievance.id[:8] }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">Enquiry #{{ grievance.id }}</li>
                 </ol>
             </nav>
             
-            <!-- Grievance Header -->
+            <!-- Enquiry Header -->
             <div class="card mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -26,21 +26,17 @@
                     <div class="row mb-3">
                         <div class="col-md-3">
                             <small class="text-muted d-block">Department</small>
-                            <span>{{ grievance.department }}</span>
+                            <span>{{ grievance.department.name if grievance.department else 'Unknown' }}</span>
                         </div>
                         <div class="col-md-3">
                             <small class="text-muted d-block">Submitted By</small>
-                            <span>{{ student.displayName if student else 'Unknown' }}</span>
+                            <span>{{ student.display_name if student else 'Unknown' }}</span>
                         </div>
                         <div class="col-md-3">
                             <small class="text-muted d-block">Submitted On</small>
                             <span>
-                                {% if grievance.createdAt %}
-                                    {% if grievance.createdAt is string %}
-                                        {{ grievance.createdAt }}
-                                    {% else %}
-                                        {{ grievance.createdAt.strftime('%Y-%m-%d %H:%M') }}
-                                    {% endif %}
+                                {% if grievance.created_at %}
+                                    {{ grievance.created_at.strftime('%Y-%m-%d %H:%M') if grievance.created_at is not string else grievance.created_at }}
                                 {% else %}
                                     N/A
                                 {% endif %}
@@ -49,12 +45,8 @@
                         <div class="col-md-3">
                             <small class="text-muted d-block">Last Updated</small>
                             <span>
-                                {% if grievance.updatedAt %}
-                                    {% if grievance.updatedAt is string %}
-                                        {{ grievance.updatedAt }}
-                                    {% else %}
-                                        {{ grievance.updatedAt.strftime('%Y-%m-%d %H:%M') }}
-                                    {% endif %}
+                                {% if grievance.updated_at %}
+                                    {{ grievance.updated_at.strftime('%Y-%m-%d %H:%M') if grievance.updated_at is not string else grievance.updated_at }}
                                 {% else %}
                                     N/A
                                 {% endif %}
@@ -123,18 +115,14 @@
                     {% if student %}
                         <div class="row">
                             <div class="col-md-6">
-                                <p><strong>Name:</strong> {{ student.displayName }}</p>
+                                <p><strong>Name:</strong> {{ student.display_name }}</p>
                                 <p><strong>Email:</strong> <a href="mailto:{{ student.email }}">{{ student.email }}</a></p>
                             </div>
                             <div class="col-md-6">
                                 <p><strong>Role:</strong> {{ student.role|title }}</p>
                                 <p><strong>Account Created:</strong> 
-                                    {% if student.createdAt %}
-                                        {% if student.createdAt is string %}
-                                            {{ student.createdAt }}
-                                        {% else %}
-                                            {{ student.createdAt.strftime('%Y-%m-%d') }}
-                                        {% endif %}
+                                    {% if student.created_at %}
+                                        {{ student.created_at.strftime('%Y-%m-%d') if student.created_at is not string else student.created_at }}
                                     {% else %}
                                         N/A
                                     {% endif %}
@@ -230,8 +218,8 @@
                 </a>
                 
                 <div>
-                    <a href="{{ url_for('admin.view_department_grievances', department=grievance.department) }}" class="btn btn-outline-primary me-2">
-                        <i class="fas fa-list me-1"></i> View Department Grievances
+                    <a href="{{ url_for('admin.view_department_grievances', dept_id=grievance.department_id) }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-list me-1"></i> View Department Enquiries
                     </a>
                 </div>
             </div>
