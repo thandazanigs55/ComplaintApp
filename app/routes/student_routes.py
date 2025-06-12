@@ -133,7 +133,7 @@ def new_grievance():
         user_id = current_user.id
         
         errors = []
-        
+            
         # Validate description
         if not description:
             errors.append('Description is required.')
@@ -141,7 +141,7 @@ def new_grievance():
             errors.append('Description must be at least 20 characters long.')
         elif len(description) > 3000:
             errors.append('Description must not exceed 3000 characters.')
-        
+            
         # Validate department
         if not department_id:
             errors.append('Department is required.')

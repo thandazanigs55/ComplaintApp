@@ -9,8 +9,10 @@ import datetime
 # Load environment variables
 load_dotenv()
 
-# Import models
-from app.models.models import db, User
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate()
+login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
@@ -24,14 +26,16 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
-    # Initialize extensions
+    # Initialize extensions with app
     db.init_app(app)
-    migrate = Migrate(app, db)
+    migrate.init_app(app, db)
     
     # Initialize Login Manager
-    login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    
+    # Import models after db initialization
+    from app.models.models import User
     
     @login_manager.user_loader
     def load_user(user_id):
